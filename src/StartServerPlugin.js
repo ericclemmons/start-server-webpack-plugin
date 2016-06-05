@@ -11,7 +11,7 @@ export default class StartServerPlugin {
 
   afterEmit(compilation, callback) {
     if (this.worker && this.worker.isConnected()) {
-      return;
+      return callback();
     }
 
     this.startServer(compilation, callback);
