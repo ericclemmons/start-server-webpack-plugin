@@ -22,7 +22,7 @@ export default class StartServerPlugin {
   }
 
   startServer(compilation, callback) {
-    const entry = Object.keys(compilation.assets).shift();
+    const entry = Object.keys(compilation.assets).filter((asset) => (/.js$/).test(asset)).shift();
     const { existsAt } = compilation.assets[entry];
 
     cluster.setupMaster({ exec: existsAt });
