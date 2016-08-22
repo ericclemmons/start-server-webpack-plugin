@@ -36,6 +36,24 @@ export default {
 }
 ```
 
+> **Protip:** You may consider using [`webpack-config-utils`](http://npm.im/webpack-config-utils) to use this only in development:
+
+```javascript
+import StartServerPlugin from "start-server-webpack-plugin";
+import {getIfUtils, removeEmpty} from "webpack-config-utils";
+
+// utilizing the webpack 2 function API: `webpack --env.dev`
+export default env => {
+  const {ifDev} = getIfUtils(env)
+  
+  return {
+    // ...
+    plugins: removeEmpty([
+      ifDev(new StartServerPlugin())
+    ]),
+  }
+};
+```
 
 ### License
 
