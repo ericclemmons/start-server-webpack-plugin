@@ -29,6 +29,7 @@ export default class StartServerPlugin {
       entry = this.entry;
       if (!compilation.assets[entry]) {
         console.error("Entry " + entry + " not found. Try one of: " + entries.join(" "));
+      }
     } else {
       entry = entries[0];
       if (entries.length > 1) {
