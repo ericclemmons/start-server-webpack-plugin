@@ -23,19 +23,22 @@ import StartServerPlugin from "start-server-webpack-plugin";
 export default {
   // This script will be ran after building
   entry: {
-    ...
+    server: ...
   },
   ...
   plugins: [
     ...
     // Only use this in DEVELOPMENT
-    new StartServerPlugin(),
+    new StartServerPlugin('server.js'),
     ...
   ],
   ...
 }
 ```
 
+The `name` argument in `new StartServerPlugin(name)` refers to the built asset, which is named by the output options of webpack (in the example the entry `server` becomes `server.js`. This way, the plugin knows which entry to start in case there are several.
+
+If you don't pass a name, the plugin will tell you the available names.
 
 ### License
 
