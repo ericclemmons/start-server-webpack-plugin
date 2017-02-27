@@ -48,3 +48,5 @@ export default class StartServerPlugin {
     cluster.fork();
   }
 }
+
+module.exports = StartServerPlugin;
