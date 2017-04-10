@@ -29,7 +29,11 @@ export default {
   plugins: [
     ...
     // Only use this in DEVELOPMENT
-    new StartServerPlugin('server.js'),
+    new StartServerPlugin({
+      name: 'server.js',
+      nodeArgs: ['--inspect'], // allow debugging
+      args: ['scriptArgument1', 'scriptArgument2'], // pass args to script
+    }),
     ...
   ],
   ...
@@ -39,6 +43,8 @@ export default {
 The `name` argument in `new StartServerPlugin(name)` refers to the built asset, which is named by the output options of webpack (in the example the entry `server` becomes `server.js`. This way, the plugin knows which entry to start in case there are several.
 
 If you don't pass a name, the plugin will tell you the available names.
+
+You can use `nodeArgs` and `args` to pass arguments to node and your script, respectively. For example, you can use this to use the node debugger.
 
 ### License
 

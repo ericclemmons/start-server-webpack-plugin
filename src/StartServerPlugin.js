@@ -1,13 +1,29 @@
 import cluster from "cluster";
 
 export default class StartServerPlugin {
-  constructor(entry) {
-    this.entry = entry;
+  constructor(options) {
+    if (options == null) {
+      options = {};
+    }
+    if (typeof options === 'string') {
+      options = {name: options};
+    }
+    this.options = options;
     this.afterEmit = this.afterEmit.bind(this);
     this.apply = this.apply.bind(this);
     this.startServer = this.startServer.bind(this);
 
     this.worker = null;
+  }
+
+  _getArgs() {
+    const {options} = this;
+    const execArgv = (options.nodeArgs || []).concat(process.execArgv);
+    if (options.args) {
+      execArgv.push('--');
+      execArgv.push.apply(execArgv, options.args);
+    }
+    return execArgv;
   }
 
   afterEmit(compilation, callback) {
@@ -23,22 +39,24 @@ export default class StartServerPlugin {
   }
 
   startServer(compilation, callback) {
-    let entry;
-    const entries = Object.keys(compilation.assets);
-    if (this.entry) {
-      entry = this.entry;
-      if (!compilation.assets[entry]) {
-        console.error("Entry " + entry + " not found. Try one of: " + entries.join(" "));
+    const {options} = this;
+    let name;
+    const names = Object.keys(compilation.assets);
+    if (options.name) {
+      name = options.name;
+      if (!compilation.assets[name]) {
+        console.error("Entry " + name + " not found. Try one of: " + names.join(" "));
       }
     } else {
-      entry = entries[0];
-      if (entries.length > 1) {
-        console.log("More than one entry built, selected " + entry + ". All entries: " + entries.join(" "));
+      name = names[0];
+      if (names.length > 1) {
+        console.log("More than one entry built, selected " + name + ". All names: " + names.join(" "));
       }
     }
-    const { existsAt } = compilation.assets[entry];
+    const { existsAt } = compilation.assets[name];
+    const execArgv = this._getArgs();
 
-    cluster.setupMaster({ exec: existsAt });
+    cluster.setupMaster({ exec: existsAt, execArgv });
 
     cluster.on("online", (worker) => {
       this.worker = worker;
