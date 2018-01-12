@@ -3,7 +3,7 @@
 > Automatically start your server once Webpack's build completes.
 
 [![travis build](https://img.shields.io/travis/ericclemmons/start-server-webpack-plugin.svg)](https://travis-ci.org/ericclemmons/start-server-webpack-plugin)
-[![version](https://img.shields.io/npm/v/start-server-webpack-plugin.svg)](http://npm.im/estart-server-webpack-plugin)
+[![version](https://img.shields.io/npm/v/start-server-webpack-plugin.svg)](http://npm.im/start-server-webpack-plugin)
 [![downloads](https://img.shields.io/npm/dm/start-server-webpack-plugin.svg)](http://npm-stat.com/charts.html?package=start-server-webpack-plugin)
 [![MIT License](https://img.shields.io/npm/l/start-server-webpack-plugin.svg)](http://opensource.org/licenses/MIT)
 
