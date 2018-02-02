@@ -26,6 +26,16 @@ export default class StartServerPlugin {
     return execArgv;
   }
 
+  _getInspectPort(execArgv) {
+    const inspectArg = execArgv.find(arg => arg.includes('--inspect'))
+    if (!inspectArg || !inspectArg.includes('=')) {
+      return;
+    }
+    const hostPort = inspectArg.split('=')[1]
+    const port = hostPort.includes(':') ? hostPort.split(':')[1] : hostPort;
+    return parseInt(port)
+  }
+
   afterEmit(compilation, callback) {
     if (this.worker && this.worker.isConnected()) {
       return callback();
@@ -55,8 +65,18 @@ export default class StartServerPlugin {
     }
     const { existsAt } = compilation.assets[name];
     const execArgv = this._getArgs();
+    const inspectPort = this._getInspectPort(execArgv)
 
-    cluster.setupMaster({ exec: existsAt, execArgv });
+    const clusterOptions = {
+      exec: existsAt,
+      execArgv,
+    };
+
+    if (inspectPort) {
+      clusterOptions.inspectPort = inspectPort
+    }
+
+    cluster.setupMaster(clusterOptions);
 
     cluster.on("online", (worker) => {
       this.worker = worker;
