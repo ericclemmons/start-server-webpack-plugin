@@ -33,6 +33,7 @@ export default {
       name: 'server.js',
       nodeArgs: ['--inspect'], // allow debugging
       args: ['scriptArgument1', 'scriptArgument2'], // pass args to script
+      signal: 'SIGUSR2', // signal to send for HMR (defaults to 'SIGUSR2', set to false to disable)
     }),
     ...
   ],

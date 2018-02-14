@@ -44,4 +44,22 @@ describe("StartServerPlugin", function() {
     const port = p._getInspectPort(p._getArgs())
     expect(port).toBe(undefined)
   })
+
+  it("should return default signal if signal is not passed", function() {
+    const p = new Plugin();
+    const signal = p._getSignal();
+    expect(signal).toBe('SIGUSR2');
+  })
+
+  it("should allow user to override the default signal", function() {
+    const p = new Plugin({ signal: 'SIGUSR1' });
+    const signal = p._getSignal();
+    expect(signal).toBe('SIGUSR1');
+  })
+
+  it("should allow user to disable sending a signal", function() {
+    const p = new Plugin({ signal: false });
+    const signal = p._getSignal();
+    expect(signal).toBe(undefined);
+  })
 });
