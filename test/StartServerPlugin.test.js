@@ -57,6 +57,12 @@ describe("StartServerPlugin", function() {
     expect(signal).toBe('SIGUSR1');
   })
 
+  it("should allow user to override the default signal", function() {
+    const p = new Plugin({ signal: 2 });
+    const signal = p._getSignal();
+    expect(signal).toBe(2);
+  })
+
   it("should allow user to disable sending a signal", function() {
     const p = new Plugin({ signal: false });
     const signal = p._getSignal();

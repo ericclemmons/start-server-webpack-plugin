@@ -42,12 +42,7 @@ export default class StartServerPlugin {
     if (signal === false) {
       return;
     }
-    // allow user to manually set the signal if they'd like
-    if (typeof signal === 'string') {
-      return signal;
-    }
-    // else default to `SIGUSR2` which is what `webpack/hot/signal` uses by default
-    return 'SIGUSR2'
+    return signal || 'SIGUSR2';
   }
 
   afterEmit(compilation, callback) {
