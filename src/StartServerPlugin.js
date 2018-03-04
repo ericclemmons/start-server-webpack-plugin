@@ -36,8 +36,21 @@ export default class StartServerPlugin {
     return parseInt(port)
   }
 
+  _getSignal() {
+    const { signal } = this.options;
+    // allow users to disable sending a signal by setting to `false`...
+    if (signal === false) {
+      return;
+    }
+    return signal || 'SIGUSR2';
+  }
+
   afterEmit(compilation, callback) {
     if (this.worker && this.worker.isConnected()) {
+      const signal = this._getSignal();
+      if (signal) {
+        process.kill(this.worker.process.pid, signal);
+      }
       return callback();
     }
 
