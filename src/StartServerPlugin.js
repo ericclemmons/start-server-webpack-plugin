@@ -14,6 +14,22 @@ export default class StartServerPlugin {
     this.startServer = this.startServer.bind(this);
 
     this.worker = null;
+    if (this.options.restartable !== false) {
+      this._enableRestarting()
+    }
+  }
+
+  _enableRestarting() {
+    process.stdin.setEncoding('utf8');
+    process.stdin.on('data', data => {
+      if (data.trim() === 'rs') {
+        console.log('Restarting app...');
+        process.kill(this.worker.process.pid);
+        this._startServer(worker => {
+          this.worker = worker
+        })
+      }
+    });
   }
 
   _getArgs() {
@@ -84,23 +100,30 @@ export default class StartServerPlugin {
       }
     }
     const { existsAt } = compilation.assets[name];
+    this._entryPoint = existsAt;
+
+    this._startServer(worker => {
+      this.worker = worker;
+      callback();
+    })
+  }
+
+  _startServer(callback) {
     const execArgv = this._getArgs();
     const inspectPort = this._getInspectPort(execArgv)
 
     const clusterOptions = {
-      exec: existsAt,
+      exec: this._entryPoint,
       execArgv,
     };
 
     if (inspectPort) {
       clusterOptions.inspectPort = inspectPort
     }
-
     cluster.setupMaster(clusterOptions);
 
     cluster.on("online", (worker) => {
-      this.worker = worker;
-      callback();
+      callback(worker);
     });
 
     cluster.fork();
