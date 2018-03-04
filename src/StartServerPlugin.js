@@ -45,7 +45,14 @@ export default class StartServerPlugin {
   }
 
   apply(compiler) {
-    compiler.plugin("after-emit", this.afterEmit);
+    // Use the Webpack 4 Hooks API when possible.
+    if (compiler.hooks) {
+      const plugin = { name: "StartServerPlugin" };
+
+      compiler.hooks.afterEmit.tapAsync(plugin, this.afterEmit)
+    } else {
+      compiler.plugin("after-emit", this.afterEmit);
+    }
   }
 
   startServer(compilation, callback) {
