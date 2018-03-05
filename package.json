@@ -1,10 +1,11 @@
 {
   "name": "start-server-webpack-plugin",
-  "version": "2.2.3",
-  "description":
-    "Automatically start your server once Webpack's build completes.",
+  "version": "2.2.4",
+  "description": "Automatically start your server once Webpack's build completes.",
   "main": "dist/StartServerPlugin.js",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "prebuild": "rimraf dist",
     "build": "babel src -d dist",
@@ -17,14 +18,20 @@
     "type": "git",
     "url": "git+https://github.com/ericclemmons/start-server-webpack-plugin.git"
   },
-  "keywords": ["webpack", "server", "start", "watch", "restart", "express"],
+  "keywords": [
+    "webpack",
+    "server",
+    "start",
+    "watch",
+    "restart",
+    "express"
+  ],
   "author": "Eric Clemmons <eric@smarterspam.com>",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/ericclemmons/start-server-webpack-plugin/issues"
   },
-  "homepage":
-    "https://github.com/ericclemmons/start-server-webpack-plugin#readme",
+  "homepage": "https://github.com/ericclemmons/start-server-webpack-plugin#readme",
   "gsv": {
     "majorLabel": "Version: Major",
     "minorLabel": "Version: Minor",

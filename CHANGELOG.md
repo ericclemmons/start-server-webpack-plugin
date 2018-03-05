@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](http://semver.org/).
+## 2018-03-05 - [2.2.4 - current version]
+
+- 2.2.4 - ([21](https://github.com/ericclemmons/start-server-webpack-plugin/pull/21)) - Update deps (@wmertens)
+
 
 ## 2018-03-05 - [2.2.3 - current version]
 
@@ -44,3 +48,4 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 * ([1](https://github.com/ericclemmons/start-server-webpack-plugin/pull/1)) - Initial release (@ericclemmons)
 * ([24155cc](https://github.com/ericclemmons/start-server-webpack-plugin/commit/24155cc7cb93d7719aaec52c5cab22929d6fa882)) - Initial commit (@ericclemmons)
+
