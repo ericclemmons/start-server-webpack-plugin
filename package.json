@@ -32,6 +32,11 @@
     "url": "https://github.com/ericclemmons/start-server-webpack-plugin/issues"
   },
   "homepage": "https://github.com/ericclemmons/start-server-webpack-plugin#readme",
+  "gsv": {
+    "majorLabel": "Version: Major",
+    "minorLabel": "Version: Minor",
+    "patchLabel": "Version: Patch"
+  }
   "devDependencies": {
     "babel-cli": "^6.26.0",
     "babel-preset-es2015": "^6.24.1",
