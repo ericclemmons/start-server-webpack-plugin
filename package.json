@@ -9,7 +9,7 @@
   "scripts": {
     "prebuild": "rimraf dist",
     "build": "babel src -d dist",
-    "release": "github-semantic-version --bump",
+    "release": "github-semantic-version --bump --push --publish",
     "prepublish": "npm run build",
     "pretest": "npm run build",
     "test": "mocha --exit"
