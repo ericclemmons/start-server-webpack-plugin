@@ -8,7 +8,13 @@ export default class StartServerPlugin {
     if (typeof options === 'string') {
       options = {name: options};
     }
-    this.options = options;
+    this.options = Object.assign(
+      {
+        // Only listen on keyboard in development, so the server doesn't hang forever
+        keyboard: process.env.NODE_ENV === 'development',
+      },
+      options
+    );
     this.afterEmit = this.afterEmit.bind(this);
     this.apply = this.apply.bind(this);
     this.startServer = this.startServer.bind(this);
@@ -20,16 +26,18 @@ export default class StartServerPlugin {
   }
 
   _enableRestarting() {
-    process.stdin.setEncoding('utf8');
-    process.stdin.on('data', data => {
-      if (data.trim() === 'rs') {
-        console.log('Restarting app...');
-        process.kill(this.worker.process.pid);
-        this._startServer(worker => {
-          this.worker = worker
-        })
-      }
-    });
+    if (this.options.keyboard) {
+      process.stdin.setEncoding('utf8');
+      process.stdin.on('data', data => {
+        if (data.trim() === 'rs') {
+          console.log('Restarting app...');
+          process.kill(this.worker.process.pid);
+          this._startServer(worker => {
+            this.worker = worker;
+          });
+        }
+      });
+    }
   }
 
   _getArgs() {
