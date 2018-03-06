@@ -33,7 +33,8 @@ export default {
       name: 'server.js',
       nodeArgs: ['--inspect'], // allow debugging
       args: ['scriptArgument1', 'scriptArgument2'], // pass args to script
-      signal: 'SIGUSR2', // signal to send for HMR (defaults to 'SIGUSR2', set to false to disable)
+      signal: false | true | 'SIGUSR2', // signal to send for HMR (defaults to `false`, uses 'SIGUSR2' if `true`)
+      keyboard: true | false, // Allow typing 'rs' to restart the server. default: only if NODE_ENV is 'development'
     }),
     ...
   ],
@@ -46,6 +47,8 @@ The `name` argument in `new StartServerPlugin(name)` refers to the built asset, 
 If you don't pass a name, the plugin will tell you the available names.
 
 You can use `nodeArgs` and `args` to pass arguments to node and your script, respectively. For example, you can use this to use the node debugger.
+
+To use Hot Module Reloading with your server code, set Webpack to "hot" mode and include the `webpack/hot/poll` or `webpack/hot/signal` modules. Make sure they are part of your server bundle, e.g. if you are using `node-externals` put them in your whitelist. The latter module requires the `signal` option.
 
 ### License
 
