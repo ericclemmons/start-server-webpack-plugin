@@ -10,6 +10,7 @@ export default class StartServerPlugin {
     }
     this.options = Object.assign(
       {
+        signal: false,
         // Only listen on keyboard in development, so the server doesn't hang forever
         keyboard: process.env.NODE_ENV === 'development',
       },
@@ -63,10 +64,9 @@ export default class StartServerPlugin {
   _getSignal() {
     const { signal } = this.options;
     // allow users to disable sending a signal by setting to `false`...
-    if (signal === false) {
-      return;
-    }
-    return signal || 'SIGUSR2';
+    if (signal === false) return;
+    if (signal === true) return 'SIGUSR2';
+    return signal;
   }
 
   afterEmit(compilation, callback) {

@@ -45,8 +45,14 @@ describe('StartServerPlugin', function() {
     expect(port).toBe(undefined);
   });
 
-  it('should return default signal if signal is not passed', function() {
+  it('should not use signal if signal is not passed', function() {
     const p = new Plugin();
+    const signal = p._getSignal();
+    expect(signal).toBe(undefined);
+  });
+
+  it('should return default signal if signal is true', function() {
+    const p = new Plugin({signal: true});
     const signal = p._getSignal();
     expect(signal).toBe('SIGUSR2');
   });
