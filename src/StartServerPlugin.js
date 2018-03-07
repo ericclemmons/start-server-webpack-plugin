@@ -12,12 +12,12 @@ export default class StartServerPlugin {
     }
     this.options = Object.assign(
       {
+        entryName: 'main',
         // Only listen on keyboard in development, so the server doesn't hang forever
         keyboard: process.env.NODE_ENV === 'development',
       },
       options
     );
-    this.entryName = this.options.entryName || 'main';
     this.afterEmit = this.afterEmit.bind(this);
     this.apply = this.apply.bind(this);
     this._handleChildError = this._handleChildError.bind(this);
@@ -46,16 +46,23 @@ export default class StartServerPlugin {
   }
 
   _getScript(compilation) {
-    const {entryName} = this;
-    const entry = compilation.entrypoints[entryName];
+    const {entryName} = this.options;
+    const map = compilation.entrypoints;
+    const entry = map.get ? map.get(entryName) : map[entryName];
     if (!entry) {
+      console.log(compilation);
       throw new Error(
-        `Requested entry "${entryName}" does not exist, try one of: ${Object.keys(
-          compilation.entrypoints
+        `Requested entry "${entryName}" does not exist, try one of: ${(map.keys
+          ? map.keys()
+          : Object.keys(map)
         ).join(' ')}`
       );
     }
     const entryScript = entry.chunks[0].files[0];
+    if (!entryScript) {
+      console.error('Entry chunk not outputted', entry.chunks[0]);
+      return;
+    }
     const {path} = compilation.outputOptions;
     return sysPath.resolve(path, entryScript);
   }
@@ -127,10 +134,29 @@ export default class StartServerPlugin {
     }
 
     const scriptFile = this._getScript(compilation);
+    if (!scriptFile) return;
     const execArgv = this._getArgs();
     this.scriptFile = scriptFile;
     this.execArgv = execArgv;
     this._runWorker(callback);
+  }
+
+  _amendEntry(entry) {
+    if (typeof entry === 'function')
+      return (...args) =>
+        Promise.resolve(entry(...args)).then(this._amendEntry.bind(this));
+
+    const loaderPath = require.resolve('./monitor-loader');
+    const monitor = `!!${loaderPath}!${loaderPath}`;
+    if (typeof entry === 'string') return [entry, monitor];
+    if (Array.isArray(entry)) return [...entry, monitor];
+    if (typeof entry === 'object')
+      return Object.assign({}, entry, {
+        [this.options.entryName]: this._amendEntry(
+          entry[this.options.entryName]
+        ),
+      });
+    throw new Error('sswp> Cannot parse webpack `entry` option');
   }
 
   apply(compiler) {
@@ -139,37 +165,14 @@ export default class StartServerPlugin {
       compiler.options.entries = [compiler.options.entries];
     }
 
-    let shouldAddMonitor = false;
-    const makeHook = (compilation, callback) => {
-      shouldAddMonitor = true;
-      callback();
-    };
-    // This runs before compilation starts. We find the server entry and amend it with the monitor
-    const buildHook = module => {
-      if (!shouldAddMonitor) return;
-      if (module.name !== this.entryName) return;
-      shouldAddMonitor = false;
-      const loaderPath = require.resolve('./monitor-loader');
-      module.dependencies.push(
-        // Little trick to get our loader to run without source dependencies
-        new SingleEntryDependency(`!!${loaderPath}!${loaderPath}`)
-      );
-      this.monitorAdded = true;
-    };
+    compiler.options.entry = this._amendEntry(compiler.options.entry);
+
     // Use the Webpack 4 Hooks API when available
     if (compiler.hooks) {
       const plugin = {name: 'StartServerPlugin'};
 
-      compiler.hooks.make.tap(plugin, makeHook);
-      compiler.hooks.compilation.tap(compilation =>
-        compilation.hooks.buildModule.tap(plugin, buildHook)
-      );
       compiler.hooks.afterEmit.tapAsync(plugin, this.afterEmit);
     } else {
-      compiler.plugin('make', makeHook);
-      compiler.plugin('compilation', compilation => {
-        compilation.plugin('build-module', buildHook);
-      });
       compiler.plugin('after-emit', this.afterEmit);
     }
   }
