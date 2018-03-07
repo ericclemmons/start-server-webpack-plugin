@@ -1,16 +1,16 @@
 // Monitor server script startup and reload. Should be added at the end of entries
 const monitorFn = () => {
-  // Handle hot updates, copied from webpack/hot/poll.js
+  // Handle hot updates, copied with slight adjustments from webpack/hot/signal.js
   if (module.hot) {
-    const log = (type, msg) => console.warn(`${type}: ${msg}`);
-    log('info', 'handling hot updates');
+    const log = (type, msg) => console[type](`sswp> ${msg}`);
+    log('log', 'Handling Hot Module Reloading');
     var checkForUpdate = function checkForUpdate(fromUpdate) {
       module.hot
         .check()
         .then(function(updatedModules) {
           if (!updatedModules) {
-            if (fromUpdate) log('info', '[HMR] Update applied.');
-            else log('warning', '[HMR] Cannot find update.');
+            if (fromUpdate) log('log', 'Update applied.');
+            else log('warn', 'Cannot find update.');
             return;
           }
 
@@ -19,8 +19,8 @@ const monitorFn = () => {
               ignoreUnaccepted: true,
               onUnaccepted: function(data) {
                 log(
-                  'warning',
-                  'Ignored an update to unaccepted module ' +
+                  'warn',
+                  '\u0007Ignored an update to unaccepted module ' +
                     data.chain.join(' -> ')
                 );
               },
@@ -37,28 +37,28 @@ const monitorFn = () => {
             if (process.send) {
               process.send('SSWP_HMR_FAIL');
             }
-            log('warning', '[HMR] Cannot apply update.');
-            log('warning', '[HMR] ' + err.stack || err.message);
-            console.error(
-              '[HMR] Quitting process - will reload on next file change\u0007\n\u0007\n\u0007'
+            log('warn', 'Cannot apply update.');
+            log('warn', '' + err.stack || err.message);
+            log(
+              'error',
+              'Quitting process - will reload on next file change\u0007\n\u0007\n\u0007'
             );
             process.exit(222);
           } else {
-            log('warning', '[HMR] Update failed: ' + err.stack || err.message);
+            log('warn', 'Update failed: ' + err.stack || err.message);
           }
         });
     };
 
     process.on('message', function(message) {
-      console.warn('worker> got msg', message);
       if (message !== 'SSWP_HMR') return;
 
       if (module.hot.status() !== 'idle') {
         log(
-          'warning',
-          '[HMR] Got signal but currently in ' + module.hot.status() + ' state.'
+          'warn',
+          'Got signal but currently in ' + module.hot.status() + ' state.'
         );
-        log('warning', '[HMR] Need to be in idle state to start hot update.');
+        log('warn', 'Need to be in idle state to start hot update.');
         return;
       }
 
@@ -68,7 +68,6 @@ const monitorFn = () => {
 
   // Tell our plugin we loaded all the code without initially crashing
   if (process.send) {
-    console.warn('sswp> notifying loaded');
     process.send('SSWP_LOADED');
   }
 };

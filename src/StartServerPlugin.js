@@ -73,7 +73,7 @@ export default class StartServerPlugin {
     this.worker = null;
 
     if (!this.workerLoaded) {
-      console.error('sswp> Script did not load, not restarting');
+      console.error('sswp> Script did not load or failed HMR, not restarting');
       return;
     }
 
@@ -86,9 +86,9 @@ export default class StartServerPlugin {
   }
 
   _handleChildMessage(message) {
-    console.warn('sswp> got', message);
     if (message === 'SSWP_LOADED') {
       this.workerLoaded = true;
+      console.error('sswp> Script loaded');
     } else if (message === 'SSWP_HMR_FAIL') {
       this.workerLoaded = false;
     }
@@ -98,7 +98,14 @@ export default class StartServerPlugin {
     const {scriptFile, execArgv, options, worker} = this;
     if (worker) return;
 
-    console.warn('sswp> running script');
+    console.warn(
+      `sswp> running \`node ${[
+        ...execArgv,
+        scriptFile,
+        '--',
+        ...(options.args || []),
+      ].join(' ')}\``
+    );
     this.worker = childProcess.fork(scriptFile, options.args, {execArgv});
     this.worker.once('exit', this._handleChildExit);
     this.worker.once('error', this._handleChildError);
@@ -109,7 +116,6 @@ export default class StartServerPlugin {
 
   _hmrWorker(compilation, callback) {
     if (this.worker && this.worker.send) {
-      console.warn('sswp> notifying worker');
       this.worker.send('SSWP_HMR');
     }
     callback();
@@ -143,7 +149,6 @@ export default class StartServerPlugin {
       if (!shouldAddMonitor) return;
       if (module.name !== this.entryName) return;
       shouldAddMonitor = false;
-      console.log('adding monitor to module', module);
       const loaderPath = require.resolve('./monitor-loader');
       module.dependencies.push(
         // Little trick to get our loader to run without source dependencies
