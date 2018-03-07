@@ -1,4 +1,6 @@
+import sysPath from 'path';
 import childProcess from 'child_process';
+import SingleEntryDependency from 'webpack/lib/dependencies/SingleEntryDependency';
 
 export default class StartServerPlugin {
   constructor(options) {
@@ -6,19 +8,18 @@ export default class StartServerPlugin {
       options = {};
     }
     if (typeof options === 'string') {
-      options = {name: options};
+      options = {entryName: options};
     }
     this.options = Object.assign(
       {
-        signal: false,
         // Only listen on keyboard in development, so the server doesn't hang forever
         keyboard: process.env.NODE_ENV === 'development',
       },
       options
     );
+    this.entryName = this.options.entryName || 'main';
     this.afterEmit = this.afterEmit.bind(this);
     this.apply = this.apply.bind(this);
-    this.startServer = this.startServer.bind(this);
     this._handleChildError = this._handleChildError.bind(this);
     this._handleChildExit = this._handleChildExit.bind(this);
     this._handleChildMessage = this._handleChildMessage.bind(this);
@@ -42,6 +43,21 @@ export default class StartServerPlugin {
         }
       });
     }
+  }
+
+  _getScript(compilation) {
+    const {entryName} = this;
+    const entry = compilation.entrypoints[entryName];
+    if (!entry) {
+      throw new Error(
+        `Requested entry "${entryName}" does not exist, try one of: ${Object.keys(
+          compilation.entrypoints
+        ).join(' ')}`
+      );
+    }
+    const entryScript = entry.chunks[0].files[0];
+    const {path} = compilation.outputOptions;
+    return sysPath.resolve(path, entryScript);
   }
 
   _getArgs() {
@@ -79,11 +95,11 @@ export default class StartServerPlugin {
   }
 
   _runWorker(callback) {
-    const {existsAt, execArgv, options, worker} = this;
+    const {scriptFile, execArgv, options, worker} = this;
     if (worker) return;
 
     console.warn('sswp> running script');
-    this.worker = childProcess.fork(existsAt, options.args, {execArgv});
+    this.worker = childProcess.fork(scriptFile, options.args, {execArgv});
     this.worker.once('exit', this._handleChildExit);
     this.worker.once('error', this._handleChildError);
     this.worker.on('message', this._handleChildMessage);
@@ -104,47 +120,53 @@ export default class StartServerPlugin {
       return this._hmrWorker(compilation, callback);
     }
 
-    this.startServer(compilation, callback);
+    const scriptFile = this._getScript(compilation);
+    const execArgv = this._getArgs();
+    this.scriptFile = scriptFile;
+    this.execArgv = execArgv;
+    this._runWorker(callback);
   }
 
   apply(compiler) {
-    // Use the Webpack 4 Hooks API when possible.
+    // Not sure if needed but doesn't hurt
+    if (!Array.isArray(compiler.options.entries)) {
+      compiler.options.entries = [compiler.options.entries];
+    }
+
+    let shouldAddMonitor = false;
+    const makeHook = (compilation, callback) => {
+      shouldAddMonitor = true;
+      callback();
+    };
+    // This runs before compilation starts. We find the server entry and amend it with the monitor
+    const buildHook = module => {
+      if (!shouldAddMonitor) return;
+      if (module.name !== this.entryName) return;
+      shouldAddMonitor = false;
+      console.log('adding monitor to module', module);
+      const loaderPath = require.resolve('./monitor-loader');
+      module.dependencies.push(
+        // Little trick to get our loader to run without source dependencies
+        new SingleEntryDependency(`!!${loaderPath}!${loaderPath}`)
+      );
+      this.monitorAdded = true;
+    };
+    // Use the Webpack 4 Hooks API when available
     if (compiler.hooks) {
       const plugin = {name: 'StartServerPlugin'};
 
+      compiler.hooks.make.tap(plugin, makeHook);
+      compiler.hooks.compilation.tap(compilation =>
+        compilation.hooks.buildModule.tap(plugin, buildHook)
+      );
       compiler.hooks.afterEmit.tapAsync(plugin, this.afterEmit);
     } else {
+      compiler.plugin('make', makeHook);
+      compiler.plugin('compilation', compilation => {
+        compilation.plugin('build-module', buildHook);
+      });
       compiler.plugin('after-emit', this.afterEmit);
     }
-  }
-
-  startServer(compilation, callback) {
-    const {options} = this;
-    let name;
-    const names = Object.keys(compilation.assets);
-    if (options.name) {
-      name = options.name;
-      if (!compilation.assets[name]) {
-        console.error(
-          'Entry ' + name + ' not found. Try one of: ' + names.join(' ')
-        );
-      }
-    } else {
-      name = names[0];
-      if (names.length > 1) {
-        console.log(
-          'More than one entry built, selected ' +
-            name +
-            '. All names: ' +
-            names.join(' ')
-        );
-      }
-    }
-    const {existsAt} = compilation.assets[name];
-    const execArgv = this._getArgs();
-    this.existsAt = existsAt;
-    this.execArgv = execArgv;
-    this._runWorker(callback);
   }
 }
 
