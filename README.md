@@ -34,6 +34,8 @@ export default {
       args: ['scriptArgument1', 'scriptArgument2'],
       // Allow typing 'rs' to restart the server. default: only if NODE_ENV is 'development'
       restartable: true | false,
+      // Only run the server once (default: false)
+      once: false | true,
     }),
     ...
   ],

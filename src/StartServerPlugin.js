@@ -13,6 +13,7 @@ export default class StartServerPlugin {
     this.options = Object.assign(
       {
         entryName: 'main',
+        once: false,
         // Only listen on keyboard in development, so the server doesn't hang forever
         restartable: process.env.NODE_ENV === 'development',
       },
@@ -25,7 +26,7 @@ export default class StartServerPlugin {
     this._handleChildMessage = this._handleChildMessage.bind(this);
 
     this.worker = null;
-    if (this.options.restartable) {
+    if (this.options.restartable && !options.once) {
       this._enableRestarting();
     }
   }
@@ -81,6 +82,10 @@ export default class StartServerPlugin {
 
     if (!this.workerLoaded) {
       console.error('sswp> Script did not load or failed HMR, not restarting');
+      return;
+    }
+    if (this.options.once) {
+      console.error('sswp> Only running script once, as requested');
       return;
     }
 
