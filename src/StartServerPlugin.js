@@ -14,7 +14,7 @@ export default class StartServerPlugin {
       {
         entryName: 'main',
         // Only listen on keyboard in development, so the server doesn't hang forever
-        keyboard: process.env.NODE_ENV === 'development',
+        restartable: process.env.NODE_ENV === 'development',
       },
       options
     );
@@ -25,24 +25,24 @@ export default class StartServerPlugin {
     this._handleChildMessage = this._handleChildMessage.bind(this);
 
     this.worker = null;
-    if (this.options.restartable !== false) {
+    if (this.options.restartable) {
       this._enableRestarting();
     }
   }
 
   _enableRestarting() {
-    if (this.options.keyboard) {
-      process.stdin.setEncoding('utf8');
-      process.stdin.on('data', data => {
-        if (data.trim() === 'rs') {
-          console.log('Restarting app...');
+    console.log('sswp> Type `rs<Enter>` to restart the worker');
+    process.stdin.setEncoding('utf8');
+    process.stdin.on('data', data => {
+      if (data.trim() === 'rs') {
+        if (this.worker) {
+          console.log('sswp> Killing worker...');
           process.kill(this.worker.process.pid);
-          this._startServer(worker => {
-            this.worker = worker;
-          });
+        } else {
+          this._runWorker();
         }
-      });
-    }
+      }
+    });
   }
 
   _getScript(compilation) {

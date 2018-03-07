@@ -33,7 +33,7 @@ export default {
       // any arguments to pass to the script
       args: ['scriptArgument1', 'scriptArgument2'],
       // Allow typing 'rs' to restart the server. default: only if NODE_ENV is 'development'
-      keyboard: true | false,
+      restartable: true | false,
     }),
     ...
   ],
