@@ -44,6 +44,7 @@
     "expect": "^22.4.0",
     "github-semantic-version": "^7.1.0",
     "mocha": "^5.0.1",
-    "rimraf": "^2.6.2"
+    "rimraf": "^2.6.2",
+    "webpack": "^4.1.1"
   }
 }
