@@ -1,6 +1,6 @@
 # start-server-webpack-plugin
 
-> Automatically start your server once Webpack's build completes.
+> Automatically start your server once Webpack's build completes + handle hot reloading (HMR)
 
 [![travis build](https://img.shields.io/travis/ericclemmons/start-server-webpack-plugin.svg)](https://travis-ci.org/ericclemmons/start-server-webpack-plugin)
 [![version](https://img.shields.io/npm/v/start-server-webpack-plugin.svg)](http://npm.im/start-server-webpack-plugin)
@@ -21,20 +21,19 @@ In `webpack.config.server.babel.js`:
 import StartServerPlugin from "start-server-webpack-plugin";
 
 export default {
-  // This script will be ran after building
-  entry: {
-    server: ...
-  },
   ...
   plugins: [
     ...
     // Only use this in DEVELOPMENT
     new StartServerPlugin({
-      name: 'server.js',
-      nodeArgs: ['--inspect'], // allow debugging
-      args: ['scriptArgument1', 'scriptArgument2'], // pass args to script
-      signal: false | true | 'SIGUSR2', // signal to send for HMR (defaults to `false`, uses 'SIGUSR2' if `true`)
-      keyboard: true | false, // Allow typing 'rs' to restart the server. default: only if NODE_ENV is 'development'
+      // name of the entry to run, defaults to 'main'
+      entryName: 'server',
+      // any arguments to nodejs when running the entry, this one allows debugging
+      nodeArgs: ['--inspect-brk'],
+      // any arguments to pass to the script
+      args: ['scriptArgument1', 'scriptArgument2'],
+      // Allow typing 'rs' to restart the server. default: only if NODE_ENV is 'development'
+      keyboard: true | false,
     }),
     ...
   ],
@@ -42,14 +41,18 @@ export default {
 }
 ```
 
-The `name` argument in `new StartServerPlugin(name)` refers to the built asset, which is named by the output options of webpack (in the example the entry `server` becomes `server.js`. This way, the plugin knows which entry to start in case there are several.
-
-If you don't pass a name, the plugin will tell you the available names.
+The `entryName` argument defaults to `"main"`, which is the name Webpack uses if you use the string or array versions of the `entry` option.
 
 You can use `nodeArgs` and `args` to pass arguments to node and your script, respectively. For example, you can use this to use the node debugger.
 
-To use Hot Module Reloading with your server code, set Webpack to "hot" mode and include the `webpack/hot/poll` or `webpack/hot/signal` modules. Make sure they are part of your server bundle, e.g. if you are using `node-externals` put them in your whitelist. The latter module requires the `signal` option.
+To use Hot Module Reloading with your server code, set Webpack to "hot" and "watch" modes.
+This plugin appends some code to the end of the entry so that it can handle HMR and restarts; no need to add any of the `webpack/hot` modules.
+
+### Upgrading from v2
+
+* Remove the `name` option and define `entryName` if it's not just `"main"`
+* Remove any hot reloading additions
 
 ### License
 
-> MIT License 2016 © Eric Clemmons
+> MIT License 2016-2018 © Eric Clemmons
