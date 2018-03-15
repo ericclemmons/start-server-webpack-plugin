@@ -14,11 +14,15 @@ export default class StartServerPlugin {
       {
         entryName: 'main',
         once: false,
+        args: [],
         // Only listen on keyboard in development, so the server doesn't hang forever
         restartable: process.env.NODE_ENV === 'development',
       },
       options
     );
+    if (!Array.isArray(this.options.args))
+      throw new Error('options.args has to be an array of strings');
+
     this.afterEmit = this.afterEmit.bind(this);
     this.apply = this.apply.bind(this);
     this._handleChildError = this._handleChildError.bind(this);
@@ -109,13 +113,12 @@ export default class StartServerPlugin {
   _runWorker(callback) {
     const {scriptFile, execArgv, options, worker} = this;
     if (worker) return;
-
     console.warn(
       `sswp> running \`node ${[
         ...execArgv,
         scriptFile,
         '--',
-        ...(options.args || []),
+        ...options.args,
       ].join(' ')}\``
     );
     this.worker = childProcess.fork(scriptFile, options.args, {execArgv});
