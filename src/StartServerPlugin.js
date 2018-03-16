@@ -12,17 +12,17 @@ export default class StartServerPlugin {
     }
     this.options = Object.assign(
       {
-        entryName: 'main',
-        once: false,
-        args: [],
+        entryName: 'main', // What to run
+        once: false, // Run once and exit when worker exits
+        args: [], // Arguments for worker
         // Only listen on keyboard in development, so the server doesn't hang forever
         restartable: process.env.NODE_ENV === 'development',
       },
       options
     );
-    if (!Array.isArray(this.options.args))
+    if (!Array.isArray(this.options.args)) {
       throw new Error('options.args has to be an array of strings');
-
+    }
     this.afterEmit = this.afterEmit.bind(this);
     this.apply = this.apply.bind(this);
     this._handleChildError = this._handleChildError.bind(this);
@@ -111,20 +111,17 @@ export default class StartServerPlugin {
   }
 
   _runWorker(callback) {
-    const {scriptFile, execArgv, options, worker} = this;
-    if (worker) return;
-    console.warn(
-      `sswp> running \`node ${[
-        ...execArgv,
-        scriptFile,
-        '--',
-        ...options.args,
-      ].join(' ')}\``
-    );
-    this.worker = childProcess.fork(scriptFile, options.args, {execArgv});
-    this.worker.once('exit', this._handleChildExit);
-    this.worker.once('error', this._handleChildError);
-    this.worker.on('message', this._handleChildMessage);
+    if (this.worker) return;
+    const {scriptFile, execArgv, options: {args}} = this;
+
+    const cmdline = [...execArgv, scriptFile, '--', ...args].join(' ');
+    console.warn(`sswp> running \`node ${cmdline}\``);
+
+    const worker = childProcess.fork(scriptFile, args, {execArgv});
+    worker.once('exit', this._handleChildExit);
+    worker.once('error', this._handleChildError);
+    worker.on('message', this._handleChildMessage);
+    this.worker = worker;
 
     if (callback) callback();
   }
@@ -168,11 +165,6 @@ export default class StartServerPlugin {
   }
 
   apply(compiler) {
-    // Not sure if needed but doesn't hurt
-    if (!Array.isArray(compiler.options.entries)) {
-      compiler.options.entries = [compiler.options.entries];
-    }
-
     compiler.options.entry = this._amendEntry(compiler.options.entry);
 
     // Use the Webpack 4 Hooks API when available
