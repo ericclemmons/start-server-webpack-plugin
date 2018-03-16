@@ -15,6 +15,7 @@ export default class StartServerPlugin {
         entryName: 'main', // What to run
         once: false, // Run once and exit when worker exits
         args: [], // Arguments for worker
+        signal: false, // Send a signal instead of a message
         // Only listen on keyboard in development, so the server doesn't hang forever
         restartable: process.env.NODE_ENV === 'development',
       },
@@ -22,6 +23,10 @@ export default class StartServerPlugin {
     );
     if (!Array.isArray(this.options.args)) {
       throw new Error('options.args has to be an array of strings');
+    }
+    if (this.options.signal === true) {
+      this.options.signal = 'SIGUSR2';
+      this.options.inject = false;
     }
     this.afterEmit = this.afterEmit.bind(this);
     this.apply = this.apply.bind(this);
@@ -127,8 +132,13 @@ export default class StartServerPlugin {
   }
 
   _hmrWorker(compilation, callback) {
-    if (this.worker && this.worker.send) {
-      this.worker.send('SSWP_HMR');
+    const {worker, options: {signal}} = this;
+    if (signal) {
+      process.kill(worker.pid, signal);
+    } else if (worker.send) {
+      worker.send('SSWP_HMR');
+    } else {
+      console.error('sswp> hot reloaded but no way to tell the worker');
     }
     callback();
   }
