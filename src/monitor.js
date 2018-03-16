@@ -3,6 +3,7 @@ const monitorFn = () => {
   // Handle hot updates, copied with slight adjustments from webpack/hot/signal.js
   if (module.hot) {
     const log = (type, msg) => console[type](`sswp> ${msg}`);
+    // TODO don't show this when sending signal instead of message
     log('log', 'Handling Hot Module Reloading');
     var checkForUpdate = function checkForUpdate(fromUpdate) {
       module.hot
@@ -17,6 +18,7 @@ const monitorFn = () => {
           return module.hot
             .apply({
               ignoreUnaccepted: true,
+              // TODO probably restart
               onUnaccepted: function(data) {
                 log(
                   'warn',
@@ -26,7 +28,10 @@ const monitorFn = () => {
               },
             })
             .then(function(renewedModules) {
-              // require('./log-apply-result')(updatedModules, renewedModules);
+              require('webpack/hot/log-apply-result')(
+                updatedModules,
+                renewedModules
+              );
 
               checkForUpdate(true);
             });
