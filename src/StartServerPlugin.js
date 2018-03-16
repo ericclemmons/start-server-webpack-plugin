@@ -42,7 +42,7 @@ export default class StartServerPlugin {
       if (data.trim() === 'rs') {
         if (this.worker) {
           console.log('sswp> Killing worker...');
-          process.kill(this.worker.process.pid);
+          process.kill(this.worker.pid);
         } else {
           this._runWorker();
         }
