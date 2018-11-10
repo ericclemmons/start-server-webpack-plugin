@@ -74,4 +74,57 @@ describe('StartServerPlugin', function() {
     const signal = p._getSignal();
     expect(signal).toBe(undefined);
   });
+
+  it('should start server only if all compilations have finished (one compilation)', function() {
+    const p = new Plugin('file');
+    let called = false;
+    let afterEmit;
+    p._startServer = function() {
+      called = true
+    };
+    p.apply({
+      hooks: {
+        afterEmit: {
+          tapAsync: function(plugin, emit) {
+            afterEmit = emit;
+          }
+        }
+      },
+      options: {}
+    });
+    afterEmit({
+      assets: { file: { existsAt: 'path' } }
+    }, function() {});
+    expect(called).toBe(true);
+  });
+
+  it('should start server only if all compilations have finished (many compilations)', function() {
+    const p = new Plugin('file');
+    let called = false;
+    const afterEmit = [];
+    p._startServer = function() {
+      called = true
+    };
+    p.apply({
+      hooks: {
+        afterEmit: {
+          tapAsync: function(plugin, emit) {
+            afterEmit.push(emit);
+          }
+        }
+      },
+      options: {}
+    });
+
+    afterEmit.forEach((afterEmit, i) => {
+      expect(called).toBe(false);
+
+      afterEmit({
+        assets: { [i === 0 ? 'file' : 'another']: { existsAt: 'path' } }
+      }, function() {});
+    });
+
+    expect(called).toBe(true);
+  });
+
 });
