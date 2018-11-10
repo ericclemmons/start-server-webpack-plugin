@@ -24,6 +24,8 @@ export default class StartServerPlugin {
     if (this.options.restartable !== false) {
       this._enableRestarting();
     }
+    this.emitted = {};
+    this.compilers = 0;
   }
 
   _enableRestarting() {
@@ -69,7 +71,7 @@ export default class StartServerPlugin {
     return signal;
   }
 
-  afterEmit(compilation, callback) {
+  afterEmit(name, compilation, callback) {
     if (this.worker && this.worker.isConnected()) {
       const signal = this._getSignal();
       if (signal) {
@@ -78,49 +80,85 @@ export default class StartServerPlugin {
       return callback();
     }
 
+    this.emitted[name] = true;
     this.startServer(compilation, callback);
   }
 
   apply(compiler) {
+    const afterEmit = this.afterEmit.bind(this, `${compiler.options.name || 'StartServerPlugin'}-${this.compilers++}`);
     // Use the Webpack 4 Hooks API when possible.
     if (compiler.hooks) {
       const plugin = {name: 'StartServerPlugin'};
 
-      compiler.hooks.afterEmit.tapAsync(plugin, this.afterEmit);
+      compiler.hooks.afterEmit.tapAsync(plugin, afterEmit);
     } else {
-      compiler.plugin('after-emit', this.afterEmit);
+      compiler.plugin('after-emit', afterEmit);
     }
   }
 
   startServer(compilation, callback) {
-    const {options} = this;
-    let name;
-    const names = Object.keys(compilation.assets);
-    if (options.name) {
-      name = options.name;
-      if (!compilation.assets[name]) {
-        console.error(
-          'Entry ' + name + ' not found. Try one of: ' + names.join(' ')
-        );
+    const {options, compilers, _entryPoint, emitted} = this;
+
+    if (
+      !_entryPoint
+      && (
+        !options.compilation
+        || compilation.name === options.compilation
+      )
+    ) {
+      let name;
+      const names = Object.keys(compilation.assets);
+
+      if (options.name) {
+        if (compilation.assets[options.name]) {
+          name = options.name;
+        } else if (compilers === 1 || options.compilation) {
+          console.error(
+            'Entry ' + options.name + ' not found. Try one of: ' + names.join(' ')
+          );
+        }
+      } else {
+        name = names[0];
+
+        if (names.length > 1) {
+          console.log(
+            'More than one entry built, selected ' +
+              name +
+              '. All names: ' +
+              names.join(' ')
+          );
+        }
+
+        if (compilers > 1) {
+          console.log(
+            'More than one compiler ( '+ compilers + ' ) are used' +
+              ( compilation.name
+                ? ', selected ' + compilation.name
+                : ''
+              )
+          );
+        }
       }
-    } else {
-      name = names[0];
-      if (names.length > 1) {
-        console.log(
-          'More than one entry built, selected ' +
-            name +
-            '. All names: ' +
-            names.join(' ')
-        );
+
+      if (name) {
+        const {existsAt} = compilation.assets[name];
+        this._entryPoint = existsAt;
       }
     }
-    const {existsAt} = compilation.assets[name];
-    this._entryPoint = existsAt;
 
-    this._startServer(worker => {
-      this.worker = worker;
+    if (Object.keys(emitted).length === compilers) {
+      if (!this._entryPoint) {
+        console.error('Could not found any valid script to run');
+        callback();
+      } else {
+        this._startServer(worker => {
+          this.worker = worker;
+          callback();
+        });
+      }
+    } else {
       callback();
-    });
+    }
   }
 
   _startServer(callback) {
