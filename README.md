@@ -31,6 +31,7 @@ export default {
     // Only use this in DEVELOPMENT
     new StartServerPlugin({
       name: 'server.js',
+      compilation: 'compilation-name', // only used when multi compiler
       nodeArgs: ['--inspect'], // allow debugging
       args: ['scriptArgument1', 'scriptArgument2'], // pass args to script
       signal: false | true | 'SIGUSR2', // signal to send for HMR (defaults to `false`, uses 'SIGUSR2' if `true`)
@@ -46,9 +47,13 @@ The `name` argument in `new StartServerPlugin(name)` refers to the built asset, 
 
 If you don't pass a name, the plugin will tell you the available names.
 
+The `compilation` argument is used to specify in what compilation the build asset will be searched (_only used when the same instance of the plugin is passed to many webpack plugin configurations_).
+
 You can use `nodeArgs` and `args` to pass arguments to node and your script, respectively. For example, you can use this to use the node debugger.
 
 To use Hot Module Reloading with your server code, set Webpack to "hot" mode and include the `webpack/hot/poll` or `webpack/hot/signal` modules. Make sure they are part of your server bundle, e.g. if you are using `node-externals` put them in your whitelist. The latter module requires the `signal` option.
+
+To use the plugin with a [MultiCompiler webpack's configuration](https://github.com/webpack/webpack/tree/master/examples/multi-compiler) just pass the same StartServerWebpackPlugin instance to all the configurations. The script will be run when all compilations have finished.
 
 ### License
 
