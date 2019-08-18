@@ -20,28 +20,35 @@ describe('StartServerPlugin', function() {
     expect(p.options.whee).toBe(true);
   });
 
-  it('should calculate arguments', function() {
+    it('should calculate nodeArgs', function() {
     const p = new Plugin({nodeArgs: ['meep'], args: ['moop']});
+    const nodeArgs = p._getExecArgv();
+    expect(nodeArgs.filter(a => a === 'meep').length).toBe(1);
+  });
+
+  it('should calculate args', function () {
+    const p = new Plugin({ nodeArgs: ['meep'], args: ['moop', 'bleep', 'third'] });
     const args = p._getArgs();
-    expect(args.filter(a => a === 'meep').length).toBe(1);
-    expect(args.slice(-2)).toEqual(['--', 'moop']);
+    expect(args.filter(a => a === 'moop').length).toBe(1);
+    expect(args.filter(a => a === 'bleep').length).toBe(1);
+    expect(args.slice(2)).toEqual(['third']);
   });
 
   it('should parse the inspect port', function() {
     const p = new Plugin({nodeArgs: ['--inspect=9230']});
-    const port = p._getInspectPort(p._getArgs());
+    const port = p._getInspectPort(p._getExecArgv());
     expect(port).toBe(9230);
   });
 
   it('should remove host when parsing inspect port', function() {
     const p = new Plugin({nodeArgs: ['--inspect=localhost:9230']});
-    const port = p._getInspectPort(p._getArgs());
+    const port = p._getInspectPort(p._getExecArgv());
     expect(port).toBe(9230);
   });
 
   it('should return undefined inspect port is not set', function() {
     const p = new Plugin({nodeArgs: ['--inspect']});
-    const port = p._getInspectPort(p._getArgs());
+    const port = p._getInspectPort(p._getExecArgv());
     expect(port).toBe(undefined);
   });
 

@@ -41,14 +41,16 @@ export default class StartServerPlugin {
     }
   }
 
-  _getArgs() {
+  _getExecArgv() {
     const {options} = this;
     const execArgv = (options.nodeArgs || []).concat(process.execArgv);
-    if (options.args) {
-      execArgv.push('--');
-      execArgv.push.apply(execArgv, options.args);
-    }
     return execArgv;
+  }
+
+  _getArgs() {
+    const { options } = this;
+    const argv = (options.args || []);
+    return argv;
   }
 
   _getInspectPort(execArgv) {
@@ -124,12 +126,14 @@ export default class StartServerPlugin {
   }
 
   _startServer(callback) {
-    const execArgv = this._getArgs();
+    const args = this._getArgs();
+    const execArgv = this._getExecArgv();
     const inspectPort = this._getInspectPort(execArgv);
 
     const clusterOptions = {
       exec: this._entryPoint,
       execArgv,
+      args,
     };
 
     if (inspectPort) {
