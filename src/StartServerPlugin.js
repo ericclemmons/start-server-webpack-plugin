@@ -1,6 +1,5 @@
 import sysPath from 'path';
 import childProcess from 'child_process';
-import SingleEntryDependency from 'webpack/lib/dependencies/SingleEntryDependency';
 
 export default class StartServerPlugin {
   constructor(options) {
@@ -117,7 +116,11 @@ export default class StartServerPlugin {
 
   _runWorker(callback) {
     if (this.worker) return;
-    const {scriptFile, execArgv, options: {args}} = this;
+    const {
+      scriptFile,
+      execArgv,
+      options: {args},
+    } = this;
 
     const cmdline = [...execArgv, scriptFile, '--', ...args].join(' ');
     console.warn(`sswp> running \`node ${cmdline}\``);
@@ -132,7 +135,10 @@ export default class StartServerPlugin {
   }
 
   _hmrWorker(compilation, callback) {
-    const {worker, options: {signal}} = this;
+    const {
+      worker,
+      options: {signal},
+    } = this;
     if (signal) {
       process.kill(worker.pid, signal);
     } else if (worker.send) {
@@ -144,15 +150,15 @@ export default class StartServerPlugin {
   }
 
   afterEmit(compilation, callback) {
+    this.scriptFile = this._getScript(compilation);
+
     if (this.worker) {
       return this._hmrWorker(compilation, callback);
     }
 
-    const scriptFile = this._getScript(compilation);
-    if (!scriptFile) return;
-    const execArgv = this._getArgs();
-    this.scriptFile = scriptFile;
-    this.execArgv = execArgv;
+    if (!this.scriptFile) return;
+
+    this.execArgv = this._getArgs();
     this._runWorker(callback);
   }
 
