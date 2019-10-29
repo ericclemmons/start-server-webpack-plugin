@@ -20,8 +20,14 @@ describe('StartServerPlugin', function() {
     expect(p.options.whee).toBe(true);
   });
 
-  it('should calculate arguments', function() {
+    it('should calculate nodeArgs', function() {
     const p = new Plugin({nodeArgs: ['meep'], args: ['moop']});
+    const nodeArgs = p._getExecArgv();
+    expect(nodeArgs.filter(a => a === 'meep').length).toBe(1);
+  });
+
+  it('should calculate args', function () {
+    const p = new Plugin({ nodeArgs: ['meep'], args: ['moop', 'bleep', 'third'] });
     const args = p._getArgs();
     expect(args).toEqual(['meep']);
   });

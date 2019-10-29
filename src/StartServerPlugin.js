@@ -76,7 +76,7 @@ export default class StartServerPlugin {
     return sysPath.resolve(path, entryScript);
   }
 
-  _getArgs() {
+  _getExecArgv() {
     const {options} = this;
     const execArgv = (options.nodeArgs || []).concat(process.execArgv);
     return execArgv;
