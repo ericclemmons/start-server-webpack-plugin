@@ -10,9 +10,9 @@ describe('StartServerPlugin', function() {
     expect(require('..')).toBe(Plugin);
   });
 
-  it('should accept a string name', function() {
+  it('should accept a string entryName', function() {
     const p = new Plugin('test');
-    expect(p.options.name).toBe('test');
+    expect(p.options.entryName).toBe('test');
   });
 
   it('should accept an options object', function() {
@@ -29,56 +29,41 @@ describe('StartServerPlugin', function() {
   it('should calculate args', function () {
     const p = new Plugin({ nodeArgs: ['meep'], args: ['moop', 'bleep', 'third'] });
     const args = p._getArgs();
-    expect(args.filter(a => a === 'moop').length).toBe(1);
-    expect(args.filter(a => a === 'bleep').length).toBe(1);
-    expect(args.slice(2)).toEqual(['third']);
+    expect(args).toEqual(['meep']);
   });
 
-  it('should parse the inspect port', function() {
-    const p = new Plugin({nodeArgs: ['--inspect=9230']});
-    const port = p._getInspectPort(p._getExecArgv());
-    expect(port).toBe(9230);
-  });
-
-  it('should remove host when parsing inspect port', function() {
-    const p = new Plugin({nodeArgs: ['--inspect=localhost:9230']});
-    const port = p._getInspectPort(p._getExecArgv());
-    expect(port).toBe(9230);
-  });
-
-  it('should return undefined inspect port is not set', function() {
-    const p = new Plugin({nodeArgs: ['--inspect']});
-    const port = p._getInspectPort(p._getExecArgv());
-    expect(port).toBe(undefined);
-  });
-
-  it('should not use signal if signal is not passed', function() {
+  it('should accept string entry', function() {
     const p = new Plugin();
-    const signal = p._getSignal();
-    expect(signal).toBe(undefined);
+    const entry = p._amendEntry('meep');
+    expect(entry).toBeInstanceOf(Array);
+    expect(entry[0]).toEqual('meep');
+    expect(entry[1]).toContain('monitor');
   });
-
-  it('should return default signal if signal is true', function() {
-    const p = new Plugin({signal: true});
-    const signal = p._getSignal();
-    expect(signal).toBe('SIGUSR2');
+  it('should accept array entry', function() {
+    const p = new Plugin();
+    const entry = p._amendEntry(['meep', 'moop']);
+    expect(entry).toBeInstanceOf(Array);
+    expect(entry.slice(0, 2)).toEqual(['meep', 'moop']);
+    expect(entry[2]).toContain('monitor');
   });
-
-  it('should allow user to override the default signal', function() {
-    const p = new Plugin({signal: 'SIGUSR1'});
-    const signal = p._getSignal();
-    expect(signal).toBe('SIGUSR1');
+  it('should accept object entry', function() {
+    const p = new Plugin({entryName: 'boom'});
+    const entry = p._amendEntry({boom: 'meep', beep: 'foom'});
+    expect(entry.beep).toEqual('foom');
+    expect(entry.boom).toBeInstanceOf(Array);
+    expect(entry.boom[0]).toEqual('meep');
+    expect(entry.boom[1]).toContain('monitor');
   });
-
-  it('should allow user to override the default signal', function() {
-    const p = new Plugin({signal: 2});
-    const signal = p._getSignal();
-    expect(signal).toBe(2);
-  });
-
-  it('should allow user to disable sending a signal', function() {
-    const p = new Plugin({signal: false});
-    const signal = p._getSignal();
-    expect(signal).toBe(undefined);
+  it('should accept function entry', function(cb) {
+    const p = new Plugin();
+    const entryFn = p._amendEntry(arg => arg);
+    expect(entryFn).toBeInstanceOf(Function);
+    const entry = entryFn('meep');
+    expect(entry).toBeInstanceOf(Promise);
+    entry.then(entry => {
+      expect(entry[0]).toEqual('meep');
+      expect(entry[1]).toContain('monitor');
+      cb();
+    });
   });
 });
