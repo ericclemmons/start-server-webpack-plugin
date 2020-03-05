@@ -42,6 +42,7 @@
     "@babel/cli": "^7.8.4",
     "@babel/core": "^7.8.7",
     "babel-preset-env": "^1.7.0",
+    "babel-register": "^6.26.0",
     "expect": "^22.4.0",
     "express": "^4.17.1",
     "github-semantic-version": "^7.1.0",
