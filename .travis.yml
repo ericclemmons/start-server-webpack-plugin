@@ -1,8 +1,7 @@
 sudo: false
 language: node_js
-cache:
-  directories:
-    - node_modules
+node_js:
+  - "10"
 notifications:
   email: false
 branches:
@@ -11,6 +10,5 @@ branches:
 deploy:
   provider: script
   script: npm run release
-  skip_cleanup: true
   on:
     branch: master
