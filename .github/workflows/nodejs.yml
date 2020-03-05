@@ -1,6 +1,9 @@
 name: Node.js CI
 
-on: [push]
+on:
+  push:
+    branches:
+      - '*'
 
 jobs:
   build:
@@ -18,8 +21,10 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
-    - run: yarn install
-    - run: yarn add ${{ matrix.webpack-version }}
-    - run: yarn run test
+    - run: npm install
+      env:
+        NODE_ENV: development
+    - run: npm install ${{ matrix.webpack-version }}
+    - run: npm run test
       env:
         CI: true

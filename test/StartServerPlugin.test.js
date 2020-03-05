@@ -1,5 +1,105 @@
+import fs from 'fs';
+import path from 'path';
+import webpack from 'webpack';
 import expect from 'expect';
+import { compareDirectory, compareWarning } from './utils';
 import Plugin from '..';
+
+describe('StartServerPluginWebpackCases', () => {
+  const casesDirectory = path.resolve(__dirname, 'cases');
+  const outputDirectory = path.resolve(__dirname, 'js');
+
+  for (const directory of fs.readdirSync(casesDirectory)) {
+    if (!/^(\.|_)/.test(directory)) {
+      // eslint-disable-next-line no-loop-func
+      it(`${directory} should compile and start the server`, (done) => {
+        const directoryForCase = path.resolve(casesDirectory, directory);
+        const outputDirectoryForCase = path.resolve(outputDirectory, directory);
+        // eslint-disable-next-line import/no-dynamic-require, global-require
+        const webpackConfig = require(path.resolve(
+          directoryForCase,
+          'webpack.config.js'
+        ));
+
+        for (const config of [].concat(webpackConfig)) {
+          Object.assign(
+            config,
+            {
+              mode: 'none',
+              context: directoryForCase,
+              output: Object.assign(
+                {
+                  path: outputDirectoryForCase,
+                },
+                config.output
+              ),
+            },
+            config
+          );
+        }
+
+        webpack(webpackConfig, (err, stats) => {
+          if (err) {
+            done(err);
+            return;
+          }
+
+          /*
+          // eslint-disable-next-line no-console
+          console.log(
+            stats.toString({
+              context: path.resolve(__dirname, '..'),
+              chunks: true,
+              chunkModules: true,
+              modules: false,
+            })
+          );
+          */
+
+          if (stats.hasErrors()) {
+            done(
+              new Error(
+                stats.toString({
+                  context: path.resolve(__dirname, '..'),
+                  errorDetails: true,
+                })
+              )
+            );
+
+            return;
+          }
+
+
+          const expectedDirectory = path.resolve(directoryForCase, 'expected');
+          const expectedDirectoryByVersion = path.join(
+            expectedDirectory,
+            `webpack-${webpack.version[0]}`
+          );
+
+          if (fs.existsSync(expectedDirectoryByVersion)) {
+            compareDirectory(
+              outputDirectoryForCase,
+              expectedDirectoryByVersion
+            );
+          } else if (fs.existsSync(expectedDirectory)) {
+            compareDirectory(outputDirectoryForCase, expectedDirectory);
+          }
+
+          const expectedWarning = path.resolve(directoryForCase, 'warnings.js');
+          if (fs.existsSync(expectedWarning)) {
+            const actualWarning = stats.toString({
+              all: false,
+              warnings: true,
+            });
+            compareWarning(actualWarning, expectedWarning);
+          }
+
+          done();
+        });
+      }, 10000);
+    }
+  }
+});
 
 describe('StartServerPlugin', function() {
   it('should be `import`-able', function() {
@@ -10,9 +110,9 @@ describe('StartServerPlugin', function() {
     expect(require('..')).toBe(Plugin);
   });
 
-  it('should accept a string name', function() {
+  it('should accept a string entryName', function() {
     const p = new Plugin('test');
-    expect(p.options.name).toBe('test');
+    expect(p.options.entryName).toBe('test');
   });
 
   it('should accept an options object', function() {
@@ -29,56 +129,41 @@ describe('StartServerPlugin', function() {
   it('should calculate args', function () {
     const p = new Plugin({ nodeArgs: ['meep'], args: ['moop', 'bleep', 'third'] });
     const args = p._getArgs();
-    expect(args.filter(a => a === 'moop').length).toBe(1);
-    expect(args.filter(a => a === 'bleep').length).toBe(1);
-    expect(args.slice(2)).toEqual(['third']);
+    expect(args).toEqual(['moop', 'bleep', 'third']);
   });
 
-  it('should parse the inspect port', function() {
-    const p = new Plugin({nodeArgs: ['--inspect=9230']});
-    const port = p._getInspectPort(p._getExecArgv());
-    expect(port).toBe(9230);
-  });
-
-  it('should remove host when parsing inspect port', function() {
-    const p = new Plugin({nodeArgs: ['--inspect=localhost:9230']});
-    const port = p._getInspectPort(p._getExecArgv());
-    expect(port).toBe(9230);
-  });
-
-  it('should return undefined inspect port is not set', function() {
-    const p = new Plugin({nodeArgs: ['--inspect']});
-    const port = p._getInspectPort(p._getExecArgv());
-    expect(port).toBe(undefined);
-  });
-
-  it('should not use signal if signal is not passed', function() {
+  it('should accept string entry', function() {
     const p = new Plugin();
-    const signal = p._getSignal();
-    expect(signal).toBe(undefined);
+    const entry = p._amendEntry('meep');
+    expect(entry).toBeInstanceOf(Array);
+    expect(entry[0]).toEqual('meep');
+    expect(entry[1]).toContain('monitor');
   });
-
-  it('should return default signal if signal is true', function() {
-    const p = new Plugin({signal: true});
-    const signal = p._getSignal();
-    expect(signal).toBe('SIGUSR2');
+  it('should accept array entry', function() {
+    const p = new Plugin();
+    const entry = p._amendEntry(['meep', 'moop']);
+    expect(entry).toBeInstanceOf(Array);
+    expect(entry.slice(0, 2)).toEqual(['meep', 'moop']);
+    expect(entry[2]).toContain('monitor');
   });
-
-  it('should allow user to override the default signal', function() {
-    const p = new Plugin({signal: 'SIGUSR1'});
-    const signal = p._getSignal();
-    expect(signal).toBe('SIGUSR1');
+  it('should accept object entry', function() {
+    const p = new Plugin({entryName: 'boom'});
+    const entry = p._amendEntry({boom: 'meep', beep: 'foom'});
+    expect(entry.beep).toEqual('foom');
+    expect(entry.boom).toBeInstanceOf(Array);
+    expect(entry.boom[0]).toEqual('meep');
+    expect(entry.boom[1]).toContain('monitor');
   });
-
-  it('should allow user to override the default signal', function() {
-    const p = new Plugin({signal: 2});
-    const signal = p._getSignal();
-    expect(signal).toBe(2);
-  });
-
-  it('should allow user to disable sending a signal', function() {
-    const p = new Plugin({signal: false});
-    const signal = p._getSignal();
-    expect(signal).toBe(undefined);
+  it('should accept function entry', function(cb) {
+    const p = new Plugin();
+    const entryFn = p._amendEntry(arg => arg);
+    expect(entryFn).toBeInstanceOf(Function);
+    const entry = entryFn('meep');
+    expect(entry).toBeInstanceOf(Promise);
+    entry.then(entry => {
+      expect(entry[0]).toEqual('meep');
+      expect(entry[1]).toContain('monitor');
+      cb();
+    });
   });
 });
