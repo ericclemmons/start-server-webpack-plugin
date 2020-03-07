@@ -11,10 +11,15 @@ jobs:
     runs-on: ubuntu-latest
 
     strategy:
+      fail-fast: false
       matrix:
-        node-version: [6.x, 10.x, 12.x]
+        node-version: [6.x, 9.x, 10.x, 12.x]
         webpack-version: [webpack@latest, webpack@beta]
-
+        exclude:
+          - node-version: 6.x
+            webpack-version: webpack@beta
+          - node-version: 9.x
+            webpack-version: webpack@beta
     steps:
     - uses: actions/checkout@v2
     - name: Use Node.js ${{ matrix.node-version }}
