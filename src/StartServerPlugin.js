@@ -228,12 +228,10 @@ export default class StartServerPlugin {
         compiler.hooks.make.tap(plugin, (compilation) => {
           compilation.addEntry(
             compilation.compiler.context,
-            webpack.EntryPlugin.createDependency(this._getMonitor(), {
-              name: this.options.entryName,
-            }),
+            webpack.EntryPlugin.createDependency(this._getMonitor(), {name: this.options.entryName}),
             this.options.entryName,
             () => {}
-          );
+          )
         });
       } else {
         compiler.options.entry = this._amendEntry(compiler.options.entry);

@@ -8,7 +8,6 @@ jobs:
     runs-on: ubuntu-latest
 
     strategy:
-      fail-fast: false
       matrix:
         node-version: [6.x, 9.x, 10.x, 12.x]
         webpack-version: [webpack@latest, webpack@beta]
@@ -29,3 +28,5 @@ jobs:
         NODE_ENV: development
     - run: npm install ${{ matrix.webpack-version }}
     - run: npm run test
+      env:
+        CI: true

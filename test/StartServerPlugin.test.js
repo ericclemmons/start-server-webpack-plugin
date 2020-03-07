@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import webpack from 'webpack';
 import expect from 'expect';
-import {compareDirectory, compareWarning} from './utils';
+import { compareDirectory, compareWarning } from './utils';
 import Plugin from '..';
 
 describe('StartServerPluginWebpackCases', (done) => {
@@ -100,8 +100,8 @@ describe('StartServerPluginWebpackCases', (done) => {
   }
 });
 
-describe('StartServerPlugin', function () {
-  it('should be `import`-able', function () {
+describe('StartServerPlugin', function() {
+  it('should be `import`-able', function() {
     expect(Plugin).toBeInstanceOf(Function);
   });
 
@@ -126,10 +126,7 @@ describe('StartServerPlugin', function () {
   });
 
   it('should calculate args', function () {
-    const p = new Plugin({
-      nodeArgs: ['meep'],
-      scriptArgs: ['moop', 'bleep', 'third'],
-    });
+    const p = new Plugin({ nodeArgs: ['meep'], scriptArgs: ['moop', 'bleep', 'third'] });
     const args = p.options.scriptArgs;
     expect(args).toEqual(['moop', 'bleep', 'third']);
   });
