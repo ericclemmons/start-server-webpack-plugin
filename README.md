@@ -56,8 +56,8 @@ This plugin appends some code to the end of the entry so that it can handle HMR 
 
 ### Upgrading from v2
 
-* Remove the `name` option and define `entryName` if it's not just `"main"`
-* Remove any hot reloading additions
+- Remove the `name` option and define `entryName` if it's not just `"main"`
+- Remove any hot reloading additions
 
 ### License
 

@@ -2,6 +2,6 @@
 
 setTimeout(() => {
   if (process.env.NODE_ENV !== 'test') {
-    console.log('Test project ran sucessfully')
+    console.log('Test project ran sucessfully');
   }
 }, 100);
