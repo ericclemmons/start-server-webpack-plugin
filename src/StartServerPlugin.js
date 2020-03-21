@@ -154,10 +154,10 @@ export default class StartServerPlugin {
     worker.once('error', this._handleChildError);
     worker.on('message', this._handleChildMessage);
     worker.stdout.on('data', (data) => {
-      this._log(data);
+      this._log(data.toString());
     });
     worker.stderr.on('data', (data) => {
-      this._error(data);
+      this._error(data.toString());
     });
     this.worker = worker;
 
@@ -219,7 +219,7 @@ export default class StartServerPlugin {
     if (compiler.hooks) {
       const plugin = {name: 'StartServerPlugin'};
       // Use the Webpack 5 Hooks API when available
-      if (webpack.EntryPlugin) {
+      if (webpack.version && parseInt(webpack.version[0]) >= 5) {
         compiler.hooks.make.tap(plugin, (compilation) => {
           compilation.addEntry(
             compilation.compiler.context,
