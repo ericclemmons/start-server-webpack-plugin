@@ -11,7 +11,7 @@ module.exports = {
   target: 'node',
   plugins: [
     new webpack.HotModuleReplacementPlugin(),
-    new StartServerPlugin({once: is_test, verbose: !is_test, debug: !is_test}),
+    new StartServerPlugin({once: is_test, verbose: !is_test}),
   ],
   output: {
     path: path.resolve(__dirname, '..', '..', 'js', 'test-project-hmr'),
