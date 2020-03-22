@@ -33,5 +33,12 @@ jobs:
     - run: npm install ${{ matrix.webpack-version }}
     - run: npm run test
     - run: npm pack
+
+    - name: Upload package
+      uses: actions/upload-artifact@v1
+      with:
+        name: package
+        path: start-server-webpack-plugin-3.0.0-rc3.tgz
+
       env:
         CI: true
