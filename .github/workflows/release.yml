@@ -39,12 +39,12 @@ jobs:
     - uses: actions/setup-node@v1
       with:
         node-version: '12.x'
-    - run: npm install
-    - run: npm run build
-    - uses: actions/setup-node@v1
-      with:
         registry-url: 'https://npm.pkg.github.com'
         scope: '@fivethreeo'
-    - run: npm publish
+    - run: npm install
+    - run: npm run build
+    - run: |
+        npm config set scope "@fivethreeo"
+        npm publish
       env:
         NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
