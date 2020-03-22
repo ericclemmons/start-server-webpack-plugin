@@ -43,8 +43,6 @@ jobs:
         scope: '@fivethreeo'
     - run: npm install
     - run: npm run build
-    - run: |
-        npm config set scope "@fivethreeo"
-        npm publish
+    - run: npm publish
       env:
         NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
