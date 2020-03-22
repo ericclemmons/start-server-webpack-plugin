@@ -10,7 +10,7 @@
     "prebuild": "rimraf dist",
     "build": "babel src -d dist",
     "release": "github-semantic-version --bump --changelog --push --publish",
-    "prepublish": "npm run build",
+    "prepublishOnly": "npm run build",
     "pretest": "npm run build",
     "prettier": "npx prettier --write './**/*.{js,jsx,json,md}'",
     "test-project": "sh test/test-project.sh test-project",

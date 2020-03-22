@@ -12,8 +12,7 @@ export default class StartServerPlugin {
     }
     this.options = Object.assign(
       {
-        verbose: true, // print server logs
-        debug: false, // print server errors
+        verbose: true, // print logs
         entryName: 'main', // What to run
         once: false, // Run once and exit when worker exits
         nodeArgs: [], // Node arguments for worker
@@ -24,6 +23,9 @@ export default class StartServerPlugin {
       },
       options
     );
+    if (this.options.args) {
+      throw new Error('options.args is now options.scriptArgs');
+    }
     if (!Array.isArray(this.options.scriptArgs)) {
       throw new Error('options.args has to be an array of strings');
     }
@@ -43,25 +45,21 @@ export default class StartServerPlugin {
     }
   }
 
-  _log(msg) {
-    if (this.options.verbose) console.log(msg);
+  _info(msg, ...args) {
+    if (this.options.verbose) console.log(`sswp> ${msg}`, ...args);
   }
 
-  _error(msg) {
-    if (this.options.debug) console.error(msg);
-  }
-
-  _warn(msg) {
-    if (this.options.verbose) console.warn(msg);
+  _error(msg, ...args) {
+    console.error(`sswp> !!! ${msg}`, ...args);
   }
 
   _enableRestarting() {
-    this._log('sswp> Type `rs<Enter>` to restart the worker');
+    this._info('Type `rs<Enter>` to restart the worker');
     process.stdin.setEncoding('utf8');
     process.stdin.on('data', data => {
       if (data.trim() === 'rs') {
         if (this.worker) {
-          this._log('sswp> Killing worker...');
+          this._info('Killing worker...');
           process.kill(this.worker.pid);
         } else {
           this._runWorker();
@@ -77,8 +75,7 @@ export default class StartServerPlugin {
       ? entrypoints.get(entryName)
       : entrypoints[entryName];
     if (!entry) {
-      this._error('Empty compilation.entrypoints');
-      this._log(compilation);
+      this._info('compilation: %O', compilation);
       throw new Error(
         `Requested entry "${entryName}" does not exist, try one of: ${(entrypoints.keys
           ? entrypoints.keys()
@@ -91,7 +88,7 @@ export default class StartServerPlugin {
       ? entry.runtimeChunk.files.values().next().value
       : entry.chunks[0].files[0];
     if (!entryScript) {
-      this._error('Entry chunk not outputted', entry);
+      this._error('Entry chunk not outputted: %O', entry);
       return;
     }
     const {path} = compilation.outputOptions;
@@ -105,17 +102,18 @@ export default class StartServerPlugin {
   }
 
   _handleChildExit(code, signal) {
-    if (code) this._error('sswp> script exited with code', code);
-    if (signal) this._error('sswp> script exited after signal', signal);
+    if (code) this._error('script exited with code', code);
+    if (signal && signal !== 'SIGTERM')
+      this._error('script exited after signal', signal);
 
     this.worker = null;
 
     if (!this.workerLoaded) {
-      this._error('sswp> Script did not load or failed HMR, not restarting');
+      this._error('Script did not load, or HMR failed; not restarting');
       return;
     }
     if (this.options.once) {
-      this._error('sswp> Only running script once, as requested');
+      this._info('Only running script once, as requested');
       return;
     }
 
@@ -130,7 +128,7 @@ export default class StartServerPlugin {
   _handleChildMessage(message) {
     if (message === 'SSWP_LOADED') {
       this.workerLoaded = true;
-      this._error('sswp> Script loaded');
+      this._info('Script loaded');
       if (process.env.NODE_ENV === 'test' && this.options.once) {
         process.kill(this.worker.pid);
       }
@@ -148,8 +146,10 @@ export default class StartServerPlugin {
 
     const execArgv = this._getExecArgv();
 
-    const cmdline = [...execArgv, scriptFile, '--', ...scriptArgs].join(' ');
-    this._warn(`sswp> running \`node ${cmdline}\``);
+    if (this.options.verbose) {
+      const cmdline = [...execArgv, scriptFile, '--', ...scriptArgs].join(' ');
+      this._info(`running \`node ${cmdline}\``);
+    }
 
     const worker = childProcess.fork(scriptFile, scriptArgs, {
       execArgv,
@@ -158,12 +158,8 @@ export default class StartServerPlugin {
     worker.once('exit', this._handleChildExit);
     worker.once('error', this._handleChildError);
     worker.on('message', this._handleChildMessage);
-    worker.stdout.on('data', data => {
-      this._log(data.toString());
-    });
-    worker.stderr.on('data', data => {
-      this._error(data.toString());
-    });
+    worker.stdout.on('data', data => console.log(data.toString()));
+    worker.stderr.on('data', data => console.error(data.toString()));
     this.worker = worker;
 
     if (callback) callback();
@@ -179,7 +175,7 @@ export default class StartServerPlugin {
     } else if (worker.send) {
       worker.send('SSWP_HMR');
     } else {
-      this._error('sswp> hot reloaded but no way to tell the worker');
+      this._error('hot reloaded but no way to tell the worker');
     }
     callback();
   }
@@ -216,11 +212,27 @@ export default class StartServerPlugin {
         ),
       });
     }
-    throw new Error('sswp> Cannot parse webpack `entry` option');
+    throw new Error('Cannot parse webpack `entry` option: %O', entry);
   }
 
   apply(compiler) {
-    // Use the Webpack 4 Hooks API when available
+    // webpack v5
+    if (webpack.EntryPlugin) {
+      compiler.hooks.make.tap(plugin, compilation => {
+        compilation.addEntry(
+          compilation.compiler.context,
+          webpack.EntryPlugin.createDependency(this._getMonitor(), {
+            name: this.options.entryName,
+          }),
+          this.options.entryName,
+          () => {}
+        );
+      });
+    } else {
+      compiler.options.entry = this._amendEntry(compiler.options.entry);
+    }
+
+    // webpack v4+
     if (compiler.hooks) {
       const plugin = {name: 'StartServerPlugin'};
       // Use the Webpack 5 Hooks API when available
@@ -240,7 +252,6 @@ export default class StartServerPlugin {
       }
       compiler.hooks.afterEmit.tapAsync(plugin, this.afterEmit);
     } else {
-      compiler.options.entry = this._amendEntry(compiler.options.entry);
       compiler.plugin('after-emit', this.afterEmit);
     }
   }

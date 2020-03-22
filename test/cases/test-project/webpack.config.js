@@ -9,9 +9,7 @@ module.exports = {
   watch: !is_test,
   entry: {main: __dirname},
   target: 'node',
-  plugins: [
-    new StartServerPlugin({once: true, verbose: !is_test, debug: !is_test}),
-  ],
+  plugins: [new StartServerPlugin({once: true, verbose: !is_test})],
   output: {
     path: path.resolve(__dirname, '..', '..', 'js', 'test-project'),
     filename: 'server.js',
