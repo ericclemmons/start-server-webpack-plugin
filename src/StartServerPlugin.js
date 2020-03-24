@@ -58,7 +58,7 @@ export default class StartServerPlugin {
   _enableRestarting() {
     this._log('sswp> Type `rs<Enter>` to restart the worker');
     process.stdin.setEncoding('utf8');
-    process.stdin.on('data', (data) => {
+    process.stdin.on('data', data => {
       if (data.trim() === 'rs') {
         if (this.worker) {
           this._log('sswp> Killing worker...');
@@ -158,10 +158,10 @@ export default class StartServerPlugin {
     worker.once('exit', this._handleChildExit);
     worker.once('error', this._handleChildError);
     worker.on('message', this._handleChildMessage);
-    worker.stdout.on('data', (data) => {
+    worker.stdout.on('data', data => {
       this._log(data.toString());
     });
-    worker.stderr.on('data', (data) => {
+    worker.stderr.on('data', data => {
       this._error(data.toString());
     });
     this.worker = worker;
