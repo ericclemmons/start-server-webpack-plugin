@@ -2,10 +2,13 @@ const path = require('path');
 const webpack = require('webpack');
 const StartServerPlugin = require('../../..');
 
+const webpackMajorVersion = typeof webpack.version !== 'undefined'
+  ? parseInt(webpack.version[0])
+  : 3;
+
 const is_test = process.env.NODE_ENV == 'test';
 
-module.exports = {
-  mode: 'development',
+module.exports = Object.assign({
   watch: !is_test,
   entry: {main: __dirname},
   target: 'node',
@@ -14,4 +17,4 @@ module.exports = {
     path: path.resolve(__dirname, '..', '..', 'js', 'test-project'),
     filename: 'server.js',
   },
-};
+}, webpackMajorVersion !== 3 ? { mode: 'development' } : {});

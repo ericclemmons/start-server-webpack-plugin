@@ -2,10 +2,13 @@ const path = require('path');
 const webpack = require('webpack');
 const StartServerPlugin = require('../../..');
 
+const webpackMajorVersion = typeof webpack.version !== 'undefined'
+  ? parseInt(webpack.version[0])
+  : 3;
+
 const is_test = process.env.NODE_ENV == 'test';
 
-module.exports = {
-  mode: 'development',
+module.exports =  Object.assign({
   watch: !is_test,
   entry: {main: [__dirname, 'webpack/hot/poll?300', 'webpack/hot/signal']},
   target: 'node',
@@ -17,4 +20,4 @@ module.exports = {
     path: path.resolve(__dirname, '..', '..', 'js', 'test-project-hmr'),
     filename: 'server.js',
   },
-};
+}, webpackMajorVersion !== 3 ? { mode: 'development' } : {});
