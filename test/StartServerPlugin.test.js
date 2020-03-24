@@ -5,6 +5,10 @@ import expect from 'expect';
 import {compareDirectory, compareWarning} from './utils';
 import Plugin from '..';
 
+const webpackMajorVersion = typeof webpack.version !== 'undefined'
+  ? parseInt(webpack.version[0])
+  : 3;
+
 describe('StartServerPluginWebpackCases', done => {
   const casesDirectory = path.resolve(__dirname, 'cases');
   const outputDirectory = path.resolve(__dirname, 'js');
@@ -25,7 +29,6 @@ describe('StartServerPluginWebpackCases', done => {
           Object.assign(
             config,
             {
-              mode: 'none',
               context: directoryForCase,
               output: Object.assign(
                 {
@@ -72,7 +75,7 @@ describe('StartServerPluginWebpackCases', done => {
           const expectedDirectory = path.resolve(directoryForCase, 'expected');
           const expectedDirectoryByVersion = path.join(
             expectedDirectory,
-            `webpack-${webpack.version[0]}`
+            `webpack-${webpackMajorVersion}`
           );
 
           if (fs.existsSync(expectedDirectoryByVersion)) {

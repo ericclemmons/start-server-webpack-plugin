@@ -2,6 +2,10 @@ import sysPath from 'path';
 import childProcess from 'child_process';
 import webpack from 'webpack';
 
+const webpackMajorVersion = typeof webpack.version !== 'undefined'
+  ? parseInt(webpack.version[0])
+  : 3;
+
 export default class StartServerPlugin {
   constructor(options) {
     if (options == null) {
@@ -217,10 +221,10 @@ export default class StartServerPlugin {
 
   apply(compiler) {
     // webpack v4+
-    if (compiler.hooks) {
+    if (webpackMajorVersion >= 4) {
       const plugin = {name: 'StartServerPlugin'};
-      // webpack v5
-      if (webpack.version && parseInt(webpack.version[0]) >= 5) {
+      // webpack v5+
+      if (webpackMajorVersion >= 5) {
         compiler.hooks.make.tap(plugin, compilation => {
           compilation.addEntry(
             compilation.compiler.context,
