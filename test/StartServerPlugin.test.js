@@ -1,5 +1,105 @@
+import fs from 'fs';
+import path from 'path';
+import webpack from 'webpack';
 import expect from 'expect';
+import { compareDirectory, compareWarning } from './utils';
 import Plugin from '..';
+
+describe('StartServerPluginWebpackCases', (done) => {
+  const casesDirectory = path.resolve(__dirname, 'cases');
+  const outputDirectory = path.resolve(__dirname, 'js');
+
+  for (const directory of fs.readdirSync(casesDirectory)) {
+    if (!/^(\.|_)/.test(directory)) {
+      // eslint-disable-next-line no-loop-func
+      it(`${directory} should compile and start the server`, (done) => {
+        const directoryForCase = path.resolve(casesDirectory, directory);
+        const outputDirectoryForCase = path.resolve(outputDirectory, directory);
+        // eslint-disable-next-line import/no-dynamic-require, global-require
+        const webpackConfig = require(path.resolve(
+          directoryForCase,
+          'webpack.config.js'
+        ));
+
+        for (const config of [].concat(webpackConfig)) {
+          Object.assign(
+            config,
+            {
+              mode: 'none',
+              context: directoryForCase,
+              output: Object.assign(
+                {
+                  path: outputDirectoryForCase,
+                },
+                config.output
+              ),
+            },
+            config
+          );
+        }
+
+        webpack(webpackConfig, (err, stats) => {
+          if (err) {
+            done(err);
+            return;
+          }
+
+          /*
+          // eslint-disable-next-line no-console
+          console.log(
+            stats.toString({
+              context: path.resolve(__dirname, '..'),
+              chunks: true,
+              chunkModules: true,
+              modules: false,
+            })
+          );
+          */
+
+          if (stats.hasErrors()) {
+            done(
+              new Error(
+                stats.toString({
+                  context: path.resolve(__dirname, '..'),
+                  errorDetails: true,
+                })
+              )
+            );
+
+            return;
+          }
+
+
+          const expectedDirectory = path.resolve(directoryForCase, 'expected');
+          const expectedDirectoryByVersion = path.join(
+            expectedDirectory,
+            `webpack-${webpack.version[0]}`
+          );
+
+          if (fs.existsSync(expectedDirectoryByVersion)) {
+            compareDirectory(
+              outputDirectoryForCase,
+              expectedDirectoryByVersion
+            );
+          } else if (fs.existsSync(expectedDirectory)) {
+            compareDirectory(outputDirectoryForCase, expectedDirectory);
+          }
+
+          const expectedWarning = path.resolve(directoryForCase, 'warnings.js');
+          if (fs.existsSync(expectedWarning)) {
+            const actualWarning = stats.toString({
+              all: false,
+              warnings: true,
+            });
+            compareWarning(actualWarning, expectedWarning);
+          }
+
+          done();
+        });
+      }, 10000);
+    }
+  }
+});
 
 describe('StartServerPlugin', function() {
   it('should be `import`-able', function() {
@@ -21,15 +121,15 @@ describe('StartServerPlugin', function() {
   });
 
     it('should calculate nodeArgs', function() {
-    const p = new Plugin({nodeArgs: ['meep'], args: ['moop']});
+    const p = new Plugin({nodeArgs: ['meep'], scriptArgs: ['moop']});
     const nodeArgs = p._getExecArgv();
     expect(nodeArgs.filter(a => a === 'meep').length).toBe(1);
   });
 
   it('should calculate args', function () {
-    const p = new Plugin({ nodeArgs: ['meep'], args: ['moop', 'bleep', 'third'] });
-    const args = p._getArgs();
-    expect(args).toEqual(['meep']);
+    const p = new Plugin({ nodeArgs: ['meep'], scriptArgs: ['moop', 'bleep', 'third'] });
+    const args = p.options.scriptArgs;
+    expect(args).toEqual(['moop', 'bleep', 'third']);
   });
 
   it('should accept string entry', function() {
