@@ -216,26 +216,10 @@ export default class StartServerPlugin {
   }
 
   apply(compiler) {
-    // webpack v5
-    if (webpack.EntryPlugin) {
-      compiler.hooks.make.tap(plugin, compilation => {
-        compilation.addEntry(
-          compilation.compiler.context,
-          webpack.EntryPlugin.createDependency(this._getMonitor(), {
-            name: this.options.entryName,
-          }),
-          this.options.entryName,
-          () => {}
-        );
-      });
-    } else {
-      compiler.options.entry = this._amendEntry(compiler.options.entry);
-    }
-
     // webpack v4+
     if (compiler.hooks) {
       const plugin = {name: 'StartServerPlugin'};
-      // Use the Webpack 5 Hooks API when available
+      // webpack v5
       if (webpack.version && parseInt(webpack.version[0]) >= 5) {
         compiler.hooks.make.tap(plugin, compilation => {
           compilation.addEntry(
