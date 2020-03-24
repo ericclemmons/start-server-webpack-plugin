@@ -58,7 +58,7 @@ export default class StartServerPlugin {
   _enableRestarting() {
     this._log('sswp> Type `rs<Enter>` to restart the worker');
     process.stdin.setEncoding('utf8');
-    process.stdin.on('data', data => {
+    process.stdin.on('data', (data) => {
       if (data.trim() === 'rs') {
         if (this.worker) {
           this._log('sswp> Killing worker...');
@@ -73,7 +73,9 @@ export default class StartServerPlugin {
   _getScript(compilation) {
     const {entryName} = this.options;
     const entrypoints = compilation.entrypoints;
-    const entry = entrypoints.get ? entrypoints.get(entryName) : entrypoints[entryName];
+    const entry = entrypoints.get
+      ? entrypoints.get(entryName)
+      : entrypoints[entryName];
     if (!entry) {
       this._error('Empty compilation.entrypoints');
       this._log(compilation);
@@ -85,9 +87,9 @@ export default class StartServerPlugin {
       );
     }
 
-    const entryScript = webpack.EntryPlugin ?
-      entry.runtimeChunk.files.values().next().value :
-      entry.chunks[0].files[0];
+    const entryScript = webpack.EntryPlugin
+      ? entry.runtimeChunk.files.values().next().value
+      : entry.chunks[0].files[0];
     if (!entryScript) {
       this._error('Entry chunk not outputted', entry);
       return;
@@ -129,7 +131,7 @@ export default class StartServerPlugin {
     if (message === 'SSWP_LOADED') {
       this.workerLoaded = true;
       this._error('sswp> Script loaded');
-      if (process.env.NODE_ENV === 'test'&&this.options.once) {
+      if (process.env.NODE_ENV === 'test' && this.options.once) {
         process.kill(this.worker.pid);
       }
     } else if (message === 'SSWP_HMR_FAIL') {
@@ -149,7 +151,10 @@ export default class StartServerPlugin {
     const cmdline = [...execArgv, scriptFile, '--', ...scriptArgs].join(' ');
     this._warn(`sswp> running \`node ${cmdline}\``);
 
-    const worker = childProcess.fork(scriptFile, scriptArgs, {execArgv, silent: true });
+    const worker = childProcess.fork(scriptFile, scriptArgs, {
+      execArgv,
+      silent: true,
+    });
     worker.once('exit', this._handleChildExit);
     worker.once('error', this._handleChildError);
     worker.on('message', this._handleChildMessage);
@@ -223,10 +228,12 @@ export default class StartServerPlugin {
         compiler.hooks.make.tap(plugin, (compilation) => {
           compilation.addEntry(
             compilation.compiler.context,
-            webpack.EntryPlugin.createDependency(this._getMonitor(), {name: this.options.entryName}),
+            webpack.EntryPlugin.createDependency(this._getMonitor(), {
+              name: this.options.entryName,
+            }),
             this.options.entryName,
             () => {}
-          )
+          );
         });
       } else {
         compiler.options.entry = this._amendEntry(compiler.options.entry);

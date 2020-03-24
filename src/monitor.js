@@ -8,7 +8,7 @@ const monitorFn = () => {
     var checkForUpdate = function checkForUpdate(fromUpdate) {
       module.hot
         .check()
-        .then(function(updatedModules) {
+        .then(function (updatedModules) {
           if (!updatedModules) {
             if (fromUpdate) log('log', 'Update applied.');
             else log('warn', 'Cannot find update.');
@@ -19,7 +19,7 @@ const monitorFn = () => {
             .apply({
               ignoreUnaccepted: true,
               // TODO probably restart
-              onUnaccepted: function(data) {
+              onUnaccepted: function (data) {
                 log(
                   'warn',
                   '\u0007Ignored an update to unaccepted module ' +
@@ -27,7 +27,7 @@ const monitorFn = () => {
                 );
               },
             })
-            .then(function(renewedModules) {
+            .then(function (renewedModules) {
               require('webpack/hot/log-apply-result')(
                 updatedModules,
                 renewedModules
@@ -36,7 +36,7 @@ const monitorFn = () => {
               checkForUpdate(true);
             });
         })
-        .catch(function(err) {
+        .catch(function (err) {
           var status = module.hot.status();
           if (['abort', 'fail'].indexOf(status) >= 0) {
             if (process.send) {
@@ -55,7 +55,7 @@ const monitorFn = () => {
         });
     };
 
-    process.on('message', function(message) {
+    process.on('message', function (message) {
       if (message !== 'SSWP_HMR') return;
 
       if (module.hot.status() !== 'idle') {
