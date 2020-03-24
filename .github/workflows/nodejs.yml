@@ -9,7 +9,7 @@ jobs:
     strategy:
       matrix:
         node-version: [6.x, 12.x, 13.x]
-        webpack-version: [webpack@3, webpack@4, webpack@beta]
+        webpack-version: [webpack@4, webpack@beta]
         exclude:
           - node-version: 6.x
             webpack-version: webpack@beta
