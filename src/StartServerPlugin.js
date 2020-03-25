@@ -57,6 +57,14 @@ export default class StartServerPlugin {
     console.error(`sswp> !!! ${msg}`, ...args);
   }
 
+  _worker_error(msg, ...args) {
+    console.error(msg);
+  }
+
+  _worker_info(msg, ...args) {
+    console.log(msg);
+  }
+
   _enableRestarting() {
     this._info('Type `rs<Enter>` to restart the worker');
     process.stdin.setEncoding('utf8');
@@ -162,8 +170,8 @@ export default class StartServerPlugin {
     worker.once('exit', this._handleChildExit);
     worker.once('error', this._handleChildError);
     worker.on('message', this._handleChildMessage);
-    worker.stdout.on('data', data => console.log(data.toString()));
-    worker.stderr.on('data', data => console.error(data.toString()));
+    worker.stdout.on('data', data => this._worker_info(data.toString()));
+    worker.stderr.on('data', data => this._worker_error(data.toString()));
     this.worker = worker;
 
     if (callback) callback();

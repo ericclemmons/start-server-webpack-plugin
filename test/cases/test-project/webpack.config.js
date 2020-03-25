@@ -1,6 +1,6 @@
 const path = require('path');
 const webpack = require('webpack');
-const StartServerPlugin = require('../../..');
+const StartServerPlugin = require('../../SilentPlugin');
 
 const webpackMajorVersion = typeof webpack.version !== 'undefined'
   ? parseInt(webpack.version[0])
