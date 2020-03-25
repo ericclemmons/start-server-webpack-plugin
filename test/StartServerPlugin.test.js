@@ -5,18 +5,17 @@ import expect from 'expect';
 import {compareDirectory, compareWarning} from './utils';
 import Plugin from '..';
 
-const webpackMajorVersion = typeof webpack.version !== 'undefined'
-  ? parseInt(webpack.version[0])
-  : 3;
+const webpackMajorVersion =
+  typeof webpack.version !== 'undefined' ? parseInt(webpack.version[0]) : 3;
 
-describe('StartServerPluginWebpackCases', done => {
+describe('StartServerPluginWebpackCases', (done) => {
   const casesDirectory = path.resolve(__dirname, 'cases');
   const outputDirectory = path.resolve(__dirname, 'js');
 
   for (const directory of fs.readdirSync(casesDirectory)) {
     if (!/^(\.|_)/.test(directory)) {
       // eslint-disable-next-line no-loop-func
-      it(`${directory} should compile and start the server`, done => {
+      it(`${directory} should compile and start the server`, (done) => {
         const directoryForCase = path.resolve(casesDirectory, directory);
         const outputDirectoryForCase = path.resolve(outputDirectory, directory);
         // eslint-disable-next-line import/no-dynamic-require, global-require
@@ -103,8 +102,8 @@ describe('StartServerPluginWebpackCases', done => {
   }
 });
 
-describe('StartServerPlugin', function() {
-  it('should be `import`-able', function() {
+describe('StartServerPlugin', function () {
+  it('should be `import`-able', function () {
     expect(Plugin).toBeInstanceOf(Function);
   });
 
@@ -122,13 +121,13 @@ describe('StartServerPlugin', function() {
     expect(p.options.whee).toBe(true);
   });
 
-  it('should calculate nodeArgs', function() {
+  it('should calculate nodeArgs', function () {
     const p = new Plugin({nodeArgs: ['meep'], scriptArgs: ['moop']});
     const nodeArgs = p._getExecArgv();
     expect(nodeArgs.filter((a) => a === 'meep').length).toBe(1);
   });
 
-  it('should calculate args', function() {
+  it('should calculate args', function () {
     const p = new Plugin({
       nodeArgs: ['meep'],
       scriptArgs: ['moop', 'bleep', 'third'],

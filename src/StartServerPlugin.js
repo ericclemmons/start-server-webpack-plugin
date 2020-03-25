@@ -2,9 +2,8 @@ import sysPath from 'path';
 import childProcess from 'child_process';
 import webpack from 'webpack';
 
-const webpackMajorVersion = typeof webpack.version !== 'undefined'
-  ? parseInt(webpack.version[0])
-  : 3;
+const webpackMajorVersion =
+  typeof webpack.version !== 'undefined' ? parseInt(webpack.version[0]) : 3;
 
 export default class StartServerPlugin {
   constructor(options) {
@@ -68,7 +67,7 @@ export default class StartServerPlugin {
   _enableRestarting() {
     this._info('Type `rs<Enter>` to restart the worker');
     process.stdin.setEncoding('utf8');
-    process.stdin.on('data', data => {
+    process.stdin.on('data', (data) => {
       if (data.trim() === 'rs') {
         if (this.worker) {
           this._info('Killing worker...');
@@ -170,8 +169,8 @@ export default class StartServerPlugin {
     worker.once('exit', this._handleChildExit);
     worker.once('error', this._handleChildError);
     worker.on('message', this._handleChildMessage);
-    worker.stdout.on('data', data => this._worker_info(data.toString()));
-    worker.stderr.on('data', data => this._worker_error(data.toString()));
+    worker.stdout.on('data', (data) => this._worker_info(data.toString()));
+    worker.stderr.on('data', (data) => this._worker_error(data.toString()));
     this.worker = worker;
 
     if (callback) callback();
@@ -233,7 +232,7 @@ export default class StartServerPlugin {
       const plugin = {name: 'StartServerPlugin'};
       // webpack v5+
       if (webpackMajorVersion >= 5) {
-        compiler.hooks.make.tap(plugin, compilation => {
+        compiler.hooks.make.tap(plugin, (compilation) => {
           compilation.addEntry(
             compilation.compiler.context,
             webpack.EntryPlugin.createDependency(this._getMonitor(), {
