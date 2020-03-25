@@ -240,6 +240,7 @@ export default class StartServerPlugin {
       }
       compiler.hooks.afterEmit.tapAsync(plugin, this.afterEmit);
     } else {
+      // webpack v3-
       compiler.options.entry = this._amendEntry(compiler.options.entry);
       compiler.plugin('after-emit', this.afterEmit);
     }

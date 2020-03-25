@@ -11,12 +11,10 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [6.x, 9.x, 10.x, 12.x]
-        webpack-version: [webpack@latest, webpack@beta]
+        node-version: [6.x, 10.x, 12.x, 13.x]
+        webpack-version: [webpack@3, webpack@4, webpack@beta]
         exclude:
           - node-version: 6.x
-            webpack-version: webpack@beta
-          - node-version: 9.x
             webpack-version: webpack@beta
 
     steps:
@@ -40,7 +38,6 @@ jobs:
       with:
         node-version: '12.x'
     - run: npm install
-    - run: npm run build
     - run: npm publish
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
