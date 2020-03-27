@@ -1,5 +1,9 @@
 import sysPath from 'path';
 import childProcess from 'child_process';
+import webpack from 'webpack';
+
+const webpackMajorVersion =
+  typeof webpack.version !== 'undefined' ? parseInt(webpack.version[0]) : 3;
 
 export default class StartServerPlugin {
   constructor(options) {
@@ -11,16 +15,21 @@ export default class StartServerPlugin {
     }
     this.options = Object.assign(
       {
+        verbose: true, // print logs
         entryName: 'main', // What to run
         once: false, // Run once and exit when worker exits
-        args: [], // Arguments for worker
+        nodeArgs: [], // Node arguments for worker
+        scriptArgs: [], // Script arguments for worker
         signal: false, // Send a signal instead of a message
         // Only listen on keyboard in development, so the server doesn't hang forever
         restartable: process.env.NODE_ENV === 'development',
       },
       options
     );
-    if (!Array.isArray(this.options.args)) {
+    if (this.options.args) {
+      throw new Error('options.args is now options.scriptArgs');
+    }
+    if (!Array.isArray(this.options.scriptArgs)) {
       throw new Error('options.args has to be an array of strings');
     }
     if (this.options.signal === true) {
@@ -39,13 +48,29 @@ export default class StartServerPlugin {
     }
   }
 
+  _info(msg, ...args) {
+    if (this.options.verbose) console.log(`sswp> ${msg}`, ...args);
+  }
+
+  _error(msg, ...args) {
+    console.error(`sswp> !!! ${msg}`, ...args);
+  }
+
+  _worker_error(msg, ...args) {
+    console.error(msg);
+  }
+
+  _worker_info(msg, ...args) {
+    console.log(msg);
+  }
+
   _enableRestarting() {
-    console.log('sswp> Type `rs<Enter>` to restart the worker');
+    this._info('Type `rs<Enter>` to restart the worker');
     process.stdin.setEncoding('utf8');
-    process.stdin.on('data', data => {
+    process.stdin.on('data', (data) => {
       if (data.trim() === 'rs') {
         if (this.worker) {
-          console.log('sswp> Killing worker...');
+          this._info('Killing worker...');
           process.kill(this.worker.pid);
         } else {
           this._runWorker();
@@ -56,20 +81,25 @@ export default class StartServerPlugin {
 
   _getScript(compilation) {
     const {entryName} = this.options;
-    const map = compilation.entrypoints;
-    const entry = map.get ? map.get(entryName) : map[entryName];
+    const entrypoints = compilation.entrypoints;
+    const entry = entrypoints.get
+      ? entrypoints.get(entryName)
+      : entrypoints[entryName];
     if (!entry) {
-      console.log(compilation);
+      this._info('compilation: %O', compilation);
       throw new Error(
-        `Requested entry "${entryName}" does not exist, try one of: ${(map.keys
-          ? map.keys()
-          : Object.keys(map)
+        `Requested entry "${entryName}" does not exist, try one of: ${(entrypoints.keys
+          ? entrypoints.keys()
+          : Object.keys(entrypoints)
         ).join(' ')}`
       );
     }
-    const entryScript = entry.chunks[0].files[0];
+
+    const entryScript = webpack.EntryPlugin
+      ? entry.runtimeChunk.files.values().next().value
+      : entry.chunks[0].files[0];
     if (!entryScript) {
-      console.error('Entry chunk not outputted', entry.chunks[0]);
+      this._error('Entry chunk not outputted: %O', entry);
       return;
     }
     const {path} = compilation.outputOptions;
@@ -83,17 +113,18 @@ export default class StartServerPlugin {
   }
 
   _handleChildExit(code, signal) {
-    if (code) console.error('sswp> script exited with code', code);
-    if (signal) console.error('sswp> script exited after signal', signal);
+    if (code) this._error('script exited with code', code);
+    if (signal && signal !== 'SIGTERM')
+      this._error('script exited after signal', signal);
 
     this.worker = null;
 
     if (!this.workerLoaded) {
-      console.error('sswp> Script did not load or failed HMR, not restarting');
+      this._error('Script did not load, or HMR failed; not restarting');
       return;
     }
     if (this.options.once) {
-      console.error('sswp> Only running script once, as requested');
+      this._info('Only running script once, as requested');
       return;
     }
 
@@ -108,7 +139,10 @@ export default class StartServerPlugin {
   _handleChildMessage(message) {
     if (message === 'SSWP_LOADED') {
       this.workerLoaded = true;
-      console.error('sswp> Script loaded');
+      this._info('Script loaded');
+      if (process.env.NODE_ENV === 'test' && this.options.once) {
+        process.kill(this.worker.pid);
+      }
     } else if (message === 'SSWP_HMR_FAIL') {
       this.workerLoaded = false;
     }
@@ -118,17 +152,25 @@ export default class StartServerPlugin {
     if (this.worker) return;
     const {
       scriptFile,
-      execArgv,
-      options: {args},
+      options: {scriptArgs},
     } = this;
 
-    const cmdline = [...execArgv, scriptFile, '--', ...args].join(' ');
-    console.warn(`sswp> running \`node ${cmdline}\``);
+    const execArgv = this._getExecArgv();
 
-    const worker = childProcess.fork(scriptFile, args, {execArgv});
+    if (this.options.verbose) {
+      const cmdline = [...execArgv, scriptFile, '--', ...scriptArgs].join(' ');
+      this._info(`running \`node ${cmdline}\``);
+    }
+
+    const worker = childProcess.fork(scriptFile, scriptArgs, {
+      execArgv,
+      silent: true,
+    });
     worker.once('exit', this._handleChildExit);
     worker.once('error', this._handleChildError);
     worker.on('message', this._handleChildMessage);
+    worker.stdout.on('data', (data) => this._worker_info(data.toString()));
+    worker.stderr.on('data', (data) => this._worker_error(data.toString()));
     this.worker = worker;
 
     if (callback) callback();
@@ -144,7 +186,7 @@ export default class StartServerPlugin {
     } else if (worker.send) {
       worker.send('SSWP_HMR');
     } else {
-      console.error('sswp> hot reloaded but no way to tell the worker');
+      this._error('hot reloaded but no way to tell the worker');
     }
     callback();
   }
@@ -158,8 +200,12 @@ export default class StartServerPlugin {
 
     if (!this.scriptFile) return;
 
-    this.execArgv = this._getArgs();
     this._runWorker(callback);
+  }
+
+  _getMonitor() {
+    const loaderPath = require.resolve('./monitor-loader');
+    return `!!${loaderPath}!${loaderPath}`;
   }
 
   _amendEntry(entry) {
@@ -167,28 +213,42 @@ export default class StartServerPlugin {
       return (...args) =>
         Promise.resolve(entry(...args)).then(this._amendEntry.bind(this));
 
-    const loaderPath = require.resolve('./monitor-loader');
-    const monitor = `!!${loaderPath}!${loaderPath}`;
+    const monitor = this._getMonitor();
     if (typeof entry === 'string') return [entry, monitor];
     if (Array.isArray(entry)) return [...entry, monitor];
-    if (typeof entry === 'object')
+    if (typeof entry === 'object') {
       return Object.assign({}, entry, {
         [this.options.entryName]: this._amendEntry(
           entry[this.options.entryName]
         ),
       });
-    throw new Error('sswp> Cannot parse webpack `entry` option');
+    }
+    throw new Error('Cannot parse webpack `entry` option: %O', entry);
   }
 
   apply(compiler) {
-    compiler.options.entry = this._amendEntry(compiler.options.entry);
-
-    // Use the Webpack 4 Hooks API when available
-    if (compiler.hooks) {
+    // webpack v4+
+    if (webpackMajorVersion >= 4) {
       const plugin = {name: 'StartServerPlugin'};
-
+      // webpack v5+
+      if (webpackMajorVersion >= 5) {
+        compiler.hooks.make.tap(plugin, (compilation) => {
+          compilation.addEntry(
+            compilation.compiler.context,
+            webpack.EntryPlugin.createDependency(this._getMonitor(), {
+              name: this.options.entryName,
+            }),
+            this.options.entryName,
+            () => {}
+          );
+        });
+      } else {
+        compiler.options.entry = this._amendEntry(compiler.options.entry);
+      }
       compiler.hooks.afterEmit.tapAsync(plugin, this.afterEmit);
     } else {
+      // webpack v3-
+      compiler.options.entry = this._amendEntry(compiler.options.entry);
       compiler.plugin('after-emit', this.afterEmit);
     }
   }

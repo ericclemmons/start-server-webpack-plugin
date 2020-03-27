@@ -26,12 +26,16 @@ export default {
     ...
     // Only use this in DEVELOPMENT
     new StartServerPlugin({
+      // print server logs
+      verbose: true,
+      // print plugin/server errors
+      debug: false,
       // name of the entry to run, defaults to 'main'
       entryName: 'server',
       // any arguments to nodejs when running the entry, this one allows debugging
       nodeArgs: ['--inspect-brk'],
       // any arguments to pass to the script
-      args: ['scriptArgument1', 'scriptArgument2'],
+      scriptArgs: ['scriptArgument1', 'scriptArgument2'],
       // Allow typing 'rs' to restart the server. default: only if NODE_ENV is 'development'
       restartable: true | false,
       // Only run the server once (default: false)
@@ -52,8 +56,8 @@ This plugin appends some code to the end of the entry so that it can handle HMR 
 
 ### Upgrading from v2
 
-* Remove the `name` option and define `entryName` if it's not just `"main"`
-* Remove any hot reloading additions
+- Remove the `name` option and define `entryName` if it's not just `"main"`
+- Remove any hot reloading additions
 
 ### License
 

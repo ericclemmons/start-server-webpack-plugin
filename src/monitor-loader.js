@@ -4,7 +4,7 @@ import monitorFn from './monitor';
 
 const monitorSrc = `(${monitorFn.toString()})()`;
 
-const loader = function() {
+const loader = function () {
   return monitorSrc;
 };
 
