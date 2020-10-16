@@ -116,8 +116,8 @@ export default class StartServerPlugin {
         );
       }
     }
-    const {existsAt} = compilation.assets[name];
-    this._entryPoint = existsAt;
+
+    this._entryPoint = path.resolve(compilation.outputOptions.path, name);
 
     this._startServer(worker => {
       this.worker = worker;
